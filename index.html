@@ -9,12 +9,12 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --accent: #e11d48; /* Default Crimson Red - Controllable from Admin Panel later */
-            --accent-bg: rgba(225, 29, 72, 0.12);
+            --accent: #e11d48;
+            --accent-bg: rgba(225, 29, 72, 0.14);
             --accent-border: rgba(225, 29, 72, 0.35);
             --bg-main: #090a0f;
             --bg-card: #12141d;
@@ -41,7 +41,6 @@
             transition: background-color 0.25s ease, color 0.25s ease;
         }
 
-        /* Custom Utility Classes for Dynamic Theme */
         .bg-theme-main { background-color: var(--bg-main); }
         .bg-theme-card { background-color: var(--bg-card); }
         .bg-theme-elevated { background-color: var(--bg-elevated); }
@@ -54,14 +53,12 @@
         .accent-soft-bg { background-color: var(--accent-bg); }
         .accent-border { border-color: var(--accent-border); }
 
-        /* Hide Scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Smooth Drawer Animation */
         .drawer-backdrop {
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.78);
+            backdrop-filter: blur(8px);
             transition: opacity 0.3s ease;
         }
         .drawer-panel {
@@ -73,8 +70,8 @@
 
     <!-- ================= TOP HEADER ================= -->
     <header class="sticky top-0 z-30 bg-theme-main/95 backdrop-blur-md border-b border-theme px-4 pt-3 pb-2">
-        <div class="max-w-6xl mx-auto">
-            <!-- Top Row: Menu, Brand Logo, Notification/Watchlist Counter, Profile Avatar -->
+        <div class="max-w-5xl mx-auto">
+            <!-- Top Row -->
             <div class="flex items-center justify-between gap-3 mb-3">
                 <div class="flex items-center gap-3">
                     <button onclick="toggleMenu(true)" class="p-2 rounded-xl bg-theme-card border border-theme hover:opacity-80 transition" aria-label="Open Menu">
@@ -86,16 +83,16 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <!-- Quick Watchlist Counter Button -->
-                    <button onclick="switchView('watchlist')" class="relative p-2 rounded-full bg-theme-card border border-theme hover:opacity-80 transition" title="My Watchlist">
-                        <i data-lucide="bookmark" class="w-5 h-5 text-theme-muted"></i>
-                        <span id="headerWatchlistBadge" class="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-bold accent-bg text-white rounded-full">0</span>
+                    <!-- Quick Watchlist Counter -->
+                    <button onclick="switchView('watchlist')" class="relative p-2 rounded-full bg-theme-card border border-theme hover:opacity-80 transition" title="Watchlist">
+                        <i data-lucide="history" class="w-5 h-5 text-theme-muted"></i>
+                        <span id="headerWatchlistBadge" class="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-bold bg-amber-600 text-white rounded-full">0</span>
                     </button>
 
-                    <!-- User Avatar Button -->
-                    <button onclick="handleProfileClick()" id="headerProfileBtn" class="relative w-9 h-9 rounded-xl accent-bg text-white font-bold text-sm flex items-center justify-center shadow-lg">
-                        <span id="userInitials">G</span>
-                        <span id="onlineStatusDot" class="hidden absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#090a0f] rounded-full"></span>
+                    <!-- User Avatar -->
+                    <button onclick="handleProfileClick()" class="relative w-9 h-9 rounded-xl accent-bg text-white font-bold text-sm flex items-center justify-center shadow-lg">
+                        <span id="userInitials">IM</span>
+                        <span id="onlineStatusDot" class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#090a0f] rounded-full"></span>
                     </button>
                 </div>
             </div>
@@ -107,7 +104,7 @@
                     type="text" 
                     id="searchInput" 
                     oninput="handleSearch(this.value)"
-                    placeholder="Search movies, series, anime or parental rating..." 
+                    placeholder="Search movies, series..." 
                     class="w-full pl-10 pr-9 py-2.5 rounded-xl bg-theme-card border border-theme text-sm focus:outline-none focus:border-rose-500/60 transition"
                 >
                 <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-theme-muted hover:text-white">
@@ -121,19 +118,16 @@
                 <button onclick="filterByMainCategory('Movie')" data-cat="Movie" class="cat-tab pb-2 border-b-2 border-transparent text-theme-muted hover:text-white whitespace-nowrap transition">Movies</button>
                 <button onclick="filterByMainCategory('TV Series')" data-cat="TV Series" class="cat-tab pb-2 border-b-2 border-transparent text-theme-muted hover:text-white whitespace-nowrap transition">TV Series</button>
                 <button onclick="filterByMainCategory('Anime')" data-cat="Anime" class="cat-tab pb-2 border-b-2 border-transparent text-theme-muted hover:text-white whitespace-nowrap transition">Anime</button>
-                <button onclick="filterByMainCategory('Family Safe')" data-cat="Family Safe" class="cat-tab pb-2 border-b-2 border-transparent text-emerald-400 hover:text-emerald-300 whitespace-nowrap flex items-center gap-1 transition">
-                    <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Family Safe
-                </button>
+                <button onclick="filterByMainCategory('Family Safe')" data-cat="Family Safe" class="cat-tab pb-2 border-b-2 border-transparent text-theme-muted hover:text-white whitespace-nowrap transition">Collections</button>
             </nav>
         </div>
     </header>
 
-    <!-- ================= SLIDE-OUT MENU DRAWER (Olamovies Style) ================= -->
+    <!-- ================= SLIDE-OUT MENU DRAWER ================= -->
     <div id="menuBackdrop" onclick="toggleMenu(false)" class="fixed inset-0 z-40 drawer-backdrop hidden opacity-0"></div>
     
     <aside id="menuDrawer" class="fixed top-0 left-0 bottom-0 w-full max-w-[360px] z-50 bg-theme-main border-r border-theme drawer-panel -translate-x-full overflow-y-auto p-4 flex flex-col justify-between">
         <div>
-            <!-- Drawer Header -->
             <div class="flex items-center justify-between pb-3 mb-4 border-b border-theme">
                 <h2 class="text-lg font-bold">Menu</h2>
                 <button onclick="toggleMenu(false)" class="p-2 rounded-xl bg-theme-card border border-theme hover:opacity-80">
@@ -145,20 +139,20 @@
             <div class="p-3.5 rounded-2xl bg-theme-card border accent-border mb-3 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="relative w-11 h-11 rounded-full accent-bg text-white font-bold text-base flex items-center justify-center">
-                        <span id="drawerUserInitials">G</span>
-                        <span id="drawerOnlineDot" class="w-3 h-3 bg-emerald-500 border-2 border-[#12141d] rounded-full absolute bottom-0 right-0"></span>
+                        <span id="drawerUserInitials">IM</span>
+                        <span class="w-3 h-3 bg-emerald-500 border-2 border-[#12141d] rounded-full absolute bottom-0 right-0"></span>
                     </div>
                     <div>
-                        <h3 id="drawerUserName" class="font-bold text-sm leading-tight">Guest User</h3>
-                        <button onclick="openAuthModal()" id="drawerManageText" class="text-xs accent-text font-medium hover:underline">Sign in for Cloud Sync</button>
+                        <h3 id="drawerUserName" class="font-bold text-sm leading-tight">Guest Reviewer</h3>
+                        <button onclick="openAuthModal()" id="drawerManageText" class="text-xs accent-text font-medium hover:underline">Manage account</button>
                     </div>
                 </div>
-                <button onclick="handleAuthAction()" id="drawerAuthBtn" class="p-2.5 rounded-xl bg-theme-elevated border border-theme hover:opacity-80" title="Login / Logout">
+                <button onclick="handleAuthAction()" class="p-2.5 rounded-xl bg-theme-elevated border border-theme hover:opacity-80">
                     <i data-lucide="log-in" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <!-- Watchlist Wide Button -->
+            <!-- Watchlist Button -->
             <button onclick="switchView('watchlist'); toggleMenu(false);" class="w-full py-3 px-4 rounded-xl bg-theme-card border border-theme hover:border-rose-500/40 flex items-center justify-center gap-2 font-semibold text-sm mb-6 transition">
                 <i data-lucide="bookmark" class="w-4 h-4 accent-text"></i>
                 <span>Watchlist</span>
@@ -169,35 +163,32 @@
             <div class="mb-6">
                 <p class="text-[11px] font-bold tracking-wider uppercase text-theme-muted mb-2.5">Browse</p>
                 <div class="grid grid-cols-2 gap-2.5">
-                    <button onclick="filterByMainCategory('Movie'); toggleMenu(false);" class="p-3.5 rounded-2xl bg-theme-card border accent-border text-left flex flex-col justify-between h-24 hover:opacity-90 transition">
+                    <button onclick="filterByMainCategory('Movie'); toggleMenu(false);" class="p-3.5 rounded-2xl bg-theme-card border accent-border text-left flex flex-col justify-between h-24">
                         <i data-lucide="clapperboard" class="w-5 h-5 accent-text"></i>
                         <div class="flex items-center justify-between w-full">
                             <span class="font-semibold text-sm">Movies</span>
-                            <i data-lucide="chevron-right" class="w-4 h-4 accent-text"></i>
+                            <i data-lucide="chevron-up" class="w-4 h-4 accent-text"></i>
                         </div>
                     </button>
-
-                    <button onclick="filterByMainCategory('TV Series'); toggleMenu(false);" class="p-3.5 rounded-2xl bg-theme-card border border-theme text-left flex flex-col justify-between h-24 hover:border-rose-500/40 transition">
+                    <button onclick="filterByMainCategory('TV Series'); toggleMenu(false);" class="p-3.5 rounded-2xl bg-theme-card border border-theme text-left flex flex-col justify-between h-24">
                         <i data-lucide="tv" class="w-5 h-5 accent-text"></i>
                         <div class="flex items-center justify-between w-full">
                             <span class="font-semibold text-sm">TV Series</span>
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-theme-muted"></i>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-theme-muted"></i>
                         </div>
                     </button>
-
-                    <button onclick="filterByMainCategory('Anime'); toggleMenu(false);" class="p-3.5 rounded-2xl bg-theme-card border border-theme text-left flex flex-col justify-between h-24 hover:border-rose-500/40 transition">
+                    <button onclick="filterByMainCategory('Anime'); toggleMenu(false);" class="p-3.5 rounded-2xl bg-theme-card border border-theme text-left flex flex-col justify-between h-24">
                         <i data-lucide="sparkles" class="w-5 h-5 accent-text"></i>
                         <div class="flex items-center justify-between w-full">
                             <span class="font-semibold text-sm">Anime</span>
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-theme-muted"></i>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-theme-muted"></i>
                         </div>
                     </button>
-
-                    <button onclick="filterByMainCategory('Family Safe'); toggleMenu(false);" class="p-3.5 rounded-2xl bg-theme-card border border-theme text-left flex flex-col justify-between h-24 hover:border-emerald-500/40 transition">
-                        <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                    <button onclick="filterByMainCategory('Family Safe'); toggleMenu(false);" class="p-3.5 rounded-2xl bg-theme-card border border-theme text-left flex flex-col justify-between h-24">
+                        <i data-lucide="library" class="w-5 h-5 accent-text"></i>
                         <div class="flex items-center justify-between w-full">
-                            <span class="font-semibold text-sm">Family Safe</span>
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-theme-muted"></i>
+                            <span class="font-semibold text-sm">Collections</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-theme-muted"></i>
                         </div>
                     </button>
                 </div>
@@ -206,184 +197,155 @@
             <!-- Regional / Industry Pills -->
             <div class="p-3.5 rounded-2xl bg-theme-card border border-theme mb-4">
                 <div class="flex items-center justify-between mb-3">
-                    <span class="text-[11px] font-bold tracking-wider uppercase text-theme-muted">Industries & Regions</span>
-                    <button onclick="filterByMainCategory('All'); toggleMenu(false);" class="text-xs accent-text font-medium">All Titles →</button>
+                    <span class="text-[11px] font-bold tracking-wider uppercase text-theme-muted">Movies</span>
+                    <button onclick="filterByMainCategory('All'); toggleMenu(false);" class="text-xs accent-text font-medium">All Movies →</button>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="filterByTag('Hollywood')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Hollywood</button>
                     <button onclick="filterByTag('Bollywood')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Bollywood</button>
                     <button onclick="filterByTag('South Indian')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">South Indian</button>
-                    <button onclick="filterByTag('Korean')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Korean</button>
-                    <button onclick="filterByTag('Japanese Anime')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Japanese Anime</button>
-                    <button onclick="filterByTag('Bengali')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Bengali</button>
-                    <button onclick="filterByTag('Documentary')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Documentary</button>
+                    <button onclick="filterByTag('Korean Movies')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Korean Movies</button>
+                    <button onclick="filterByTag('Anime Movies')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Anime Movies</button>
+                    <button onclick="filterByTag('Japanese Movies')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Japanese Movies</button>
+                    <button onclick="filterByTag('Bengali Movies')" class="px-3 py-1.5 rounded-xl bg-theme-elevated hover:bg-rose-600 hover:text-white text-xs font-medium transition">Bengali Movies</button>
                 </div>
             </div>
 
-            <!-- Top Rated Banner Button -->
-            <button onclick="sortItems('rating'); toggleMenu(false);" class="w-full p-3.5 rounded-2xl bg-theme-card border border-theme hover:border-amber-500/40 flex items-center justify-between mb-6 transition">
+            <!-- IMDb Top 250 Button -->
+            <button onclick="sortItems('rating'); toggleMenu(false);" class="w-full p-3.5 rounded-2xl bg-theme-card border border-theme flex items-center justify-between mb-6">
                 <div class="flex items-center gap-2.5">
-                    <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
-                        <i data-lucide="star" class="w-4 h-4 fill-amber-400"></i>
-                    </span>
-                    <span class="font-semibold text-sm">Top Rated Masterpieces</span>
+                    <span class="p-1 rounded-md bg-amber-500/20 text-amber-400">★</span>
+                    <span class="font-semibold text-sm">IMDb Top 250</span>
                 </div>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-theme-muted"></i>
             </button>
 
-            <!-- FILTER BY SECTION (Replaces Pirated Resolutions with Parental Safety & Genres) -->
+            <!-- FILTER BY SECTION -->
             <div class="mb-6">
                 <p class="text-[11px] font-bold tracking-wider uppercase text-theme-muted mb-2.5">Filter By</p>
-                <!-- Filter Sub-tabs -->
                 <div class="grid grid-cols-4 gap-1 p-1 rounded-xl bg-theme-card border border-theme mb-3 text-xs font-medium">
                     <button onclick="switchDrawerFilterTab('safety')" id="dfTab-safety" class="py-1.5 rounded-lg bg-theme-elevated text-white">Safety</button>
-                    <button onclick="switchDrawerFilterTab('genre')" id="dfTab-genre" class="py-1.5 rounded-lg text-theme-muted hover:text-white">Genre</button>
-                    <button onclick="switchDrawerFilterTab('lang')" id="dfTab-lang" class="py-1.5 rounded-lg text-theme-muted hover:text-white">Language</button>
-                    <button onclick="switchDrawerFilterTab('year')" id="dfTab-year" class="py-1.5 rounded-lg text-theme-muted hover:text-white">Year</button>
+                    <button onclick="switchDrawerFilterTab('genre')" id="dfTab-genre" class="py-1.5 rounded-lg text-theme-muted">Genre</button>
+                    <button onclick="switchDrawerFilterTab('lang')" id="dfTab-lang" class="py-1.5 rounded-lg text-theme-muted">Language</button>
+                    <button onclick="switchDrawerFilterTab('year')" id="dfTab-year" class="py-1.5 rounded-lg text-theme-muted">Year</button>
                 </div>
 
-                <!-- Safety Pills (Color Coded like Olamovies Resolution badges) -->
                 <div id="dfContent-safety" class="flex flex-wrap gap-2">
-                    <button onclick="filterBySafety('Safe')" class="px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-700/50 text-emerald-300 text-xs font-semibold">Kids & Family Safe</button>
-                    <button onclick="filterBySafety('Moderate')" class="px-3 py-1.5 rounded-lg bg-amber-950/60 border border-amber-700/50 text-amber-300 text-xs font-semibold">Teen / Moderate (PG-13)</button>
-                    <button onclick="filterBySafety('Strict')" class="px-3 py-1.5 rounded-lg bg-rose-950/60 border border-rose-700/50 text-rose-300 text-xs font-semibold">Adults Only (18+)</button>
-                    <button onclick="filterByTag('No Nudity')" class="px-3 py-1.5 rounded-lg bg-indigo-950/60 border border-indigo-700/50 text-indigo-300 text-xs font-semibold">Zero Nudity</button>
-                    <button onclick="filterByTag('Mild Violence')" class="px-3 py-1.5 rounded-lg bg-purple-950/60 border border-purple-700/50 text-purple-300 text-xs font-semibold">Mild Violence</button>
+                    <button onclick="filterBySafety('Safe')" class="px-3 py-1.5 rounded-lg bg-emerald-950/70 border border-emerald-700/50 text-emerald-300 text-xs font-semibold">Family Safe</button>
+                    <button onclick="filterBySafety('Moderate')" class="px-3 py-1.5 rounded-lg bg-amber-950/70 border border-amber-700/50 text-amber-300 text-xs font-semibold">PG-13 Caution</button>
+                    <button onclick="filterBySafety('Strict')" class="px-3 py-1.5 rounded-lg bg-rose-950/70 border border-rose-700/50 text-rose-300 text-xs font-semibold">18+ Strict</button>
+                    <button onclick="filterByTag('Zero Nudity')" class="px-3 py-1.5 rounded-lg bg-indigo-950/70 border border-indigo-700/50 text-indigo-300 text-xs font-semibold">Zero Nudity</button>
                 </div>
-
-                <!-- Genre Pills -->
                 <div id="dfContent-genre" class="hidden flex-wrap gap-2">
-                    <button onclick="filterByTag('Action')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Action</button>
+                    <button onclick="filterByTag('Mystery')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Mystery</button>
                     <button onclick="filterByTag('Thriller')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Thriller</button>
+                    <button onclick="filterByTag('Crime')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Crime</button>
+                    <button onclick="filterByTag('Action')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Action</button>
                     <button onclick="filterByTag('Sci-Fi')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Sci-Fi</button>
-                    <button onclick="filterByTag('Drama')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Drama</button>
-                    <button onclick="filterByTag('Horror')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Horror</button>
-                    <button onclick="filterByTag('Comedy')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Comedy</button>
                 </div>
-
-                <!-- Language Pills -->
                 <div id="dfContent-lang" class="hidden flex-wrap gap-2">
                     <button onclick="filterByTag('English')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">English</button>
-                    <button onclick="filterByTag('Hindi')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Hindi</button>
-                    <button onclick="filterByTag('Bengali')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Bengali</button>
-                    <button onclick="filterByTag('Japanese')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Japanese</button>
                     <button onclick="filterByTag('Korean')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Korean</button>
+                    <button onclick="filterByTag('Japanese')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Japanese</button>
+                    <button onclick="filterByTag('Bengali')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">Bengali</button>
                 </div>
-
-                <!-- Year Pills -->
                 <div id="dfContent-year" class="hidden flex-wrap gap-2">
                     <button onclick="filterByTag('2026')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">2026</button>
                     <button onclick="filterByTag('2025')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">2025</button>
                     <button onclick="filterByTag('2024')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">2024</button>
-                    <button onclick="filterByTag('2023')" class="px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-xs">2023 & Older</button>
                 </div>
             </div>
 
-            <!-- HELP & COMMUNITY SECTION -->
+            <!-- HELP SECTION -->
             <div class="mb-6">
-                <p class="text-[11px] font-bold tracking-wider uppercase text-theme-muted mb-2.5">Help & Info</p>
+                <p class="text-[11px] font-bold tracking-wider uppercase text-theme-muted mb-2.5">Help</p>
                 <div class="rounded-2xl bg-theme-card border border-theme divide-y divide-white/5">
-                    <button onclick="alert('Title Request feature will be connected to Firebase soon!')" class="w-full p-3.5 flex items-center justify-between text-left hover:opacity-80">
+                    <button onclick="alert('Title Request feature coming soon!')" class="w-full p-3.5 flex items-center justify-between text-left">
                         <div class="flex items-center gap-2.5">
                             <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                            <span class="text-sm font-medium">Request a Review / Title</span>
+                            <span class="text-sm font-medium">Request a title</span>
                         </div>
                         <i data-lucide="arrow-up-right" class="w-4 h-4 text-theme-muted"></i>
                     </button>
-                    <button onclick="showParentalGuideInfo()" class="w-full p-3.5 flex items-center justify-between text-left hover:opacity-80">
-                        <span class="text-sm font-medium">How Parental Guide Works</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-theme-muted"></i>
-                    </button>
-                    <a href="admin.html" class="w-full p-3.5 flex items-center justify-between text-left hover:opacity-80 text-theme-muted">
-                        <span class="text-sm font-medium flex items-center gap-2">
-                            <i data-lucide="lock" class="w-3.5 h-3.5"></i> Secret Admin Panel
-                        </span>
+                    <a href="admin.html" class="w-full p-3.5 flex items-center justify-between text-left text-theme-muted hover:text-white">
+                        <span class="text-sm font-medium">Secret Admin Panel</span>
                         <i data-lucide="chevron-right" class="w-4 h-4"></i>
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- APPEARANCE LIGHT / DARK SWITCHER -->
+        <!-- APPEARANCE -->
         <div class="pt-3 border-t border-theme flex items-center justify-between">
             <span class="text-[11px] font-bold tracking-wider uppercase text-theme-muted">Appearance</span>
             <div class="flex items-center p-1 rounded-xl bg-theme-card border border-theme">
-                <button onclick="setThemeMode('light')" id="lightModeBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-theme-muted transition">
+                <button onclick="setThemeMode('light')" id="lightModeBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-theme-muted">
                     <i data-lucide="sun" class="w-3.5 h-3.5"></i> Light
                 </button>
-                <button onclick="setThemeMode('dark')" id="darkModeBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-theme-elevated text-white transition">
+                <button onclick="setThemeMode('dark')" id="darkModeBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-theme-elevated text-white">
                     <i data-lucide="moon" class="w-3.5 h-3.5"></i> Dark
                 </button>
             </div>
         </div>
     </aside>
 
-    <!-- ================= MAIN CONTENT CONTAINER ================= -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-5">
+    <!-- ================= MAIN CONTAINER ================= -->
+    <main class="flex-1 max-w-5xl w-full mx-auto">
 
         <!-- 1. HOME VIEW -->
-        <section id="homeView">
-            <!-- Section Heading -->
+        <section id="homeView" class="px-4 py-5">
             <div class="mb-4">
-                <h1 id="currentCategoryTitle" class="text-2xl font-extrabold tracking-tight">Latest Reviews</h1>
-                <p class="text-xs text-theme-muted mt-0.5">Verified ratings & parental guidance before you watch</p>
+                <h1 id="currentCategoryTitle" class="text-2xl font-extrabold tracking-tight">Latest uploads</h1>
+                <p class="text-xs text-theme-muted mt-0.5">Newest first</p>
             </div>
 
-            <!-- 2x2 STATS COUNTER BOX (Inspired by Olamovies stats box, tailored for Reviews) -->
+            <!-- 2x2 STATS COUNTER BOX -->
             <div class="p-4 rounded-2xl bg-theme-card border border-theme grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
                 <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Family Safe</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-muted">FAMILY SAFE</span>
                     <p id="statSafe" class="text-2xl font-extrabold mt-0.5">0</p>
                 </div>
                 <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Teen / Caution</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-muted">PG-13 CAUTION</span>
                     <p id="statModerate" class="text-2xl font-extrabold mt-0.5">0</p>
                 </div>
                 <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-rose-400">18+ Strict</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-muted">18+ STRICT</span>
                     <p id="statStrict" class="text-2xl font-extrabold mt-0.5">0</p>
                 </div>
                 <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider accent-text">Total Reviews</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider accent-text">COMBINED REVIEWS</span>
                     <p id="statTotal" class="text-2xl font-extrabold accent-text mt-0.5">0</p>
                 </div>
             </div>
 
-            <!-- SORTING & FILTER BAR -->
+            <!-- SORTING BAR -->
             <div class="p-2 rounded-2xl bg-theme-card border border-theme mb-6">
                 <div class="grid grid-cols-4 gap-1 p-1 bg-theme-main rounded-xl text-xs font-semibold mb-2.5">
-                    <button onclick="sortItems('recent')" id="sort-recent" class="sort-btn py-2 rounded-lg accent-soft-bg accent-text border accent-border transition">Recent</button>
-                    <button onclick="sortItems('rating')" id="sort-rating" class="sort-btn py-2 rounded-lg text-theme-muted hover:text-white transition">Top Rated</button>
-                    <button onclick="sortItems('safe')" id="sort-safe" class="sort-btn py-2 rounded-lg text-theme-muted hover:text-white transition">Family First</button>
-                    <button onclick="sortItems('random')" id="sort-random" class="sort-btn py-2 rounded-lg text-theme-muted hover:text-white transition">Random</button>
+                    <button onclick="sortItems('recent')" id="sort-recent" class="sort-btn py-2 rounded-lg accent-soft-bg accent-text border accent-border">Recent</button>
+                    <button onclick="sortItems('rating')" id="sort-rating" class="sort-btn py-2 rounded-lg text-theme-muted hover:text-white">Most viewed</button>
+                    <button onclick="sortItems('safe')" id="sort-safe" class="sort-btn py-2 rounded-lg text-theme-muted hover:text-white">Trending</button>
+                    <button onclick="sortItems('random')" id="sort-random" class="sort-btn py-2 rounded-lg text-theme-muted hover:text-white">Random</button>
                 </div>
                 <div class="flex items-center justify-between px-2 py-1 text-xs text-theme-muted">
-                    <span id="activeFilterLabel">All titles • no active filters</span>
+                    <span id="activeFilterLabel">All time • no filters</span>
                     <button onclick="resetAllFilters()" class="flex items-center gap-1 hover:text-white font-medium">
-                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+                        <i data-lucide="SlidersHorizontal" class="w-3.5 h-3.5"></i> Filters ⌄
                     </button>
                 </div>
             </div>
 
-            <!-- MOVIES / SERIES GRID -->
-            <div id="moviesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                <!-- Dynamically Rendered Cards -->
-            </div>
+            <!-- MOVIES GRID -->
+            <div id="moviesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
         </section>
 
-        <!-- 2. WATCHLIST VIEW (Matches 0:18 - 0:26 of video) -->
-        <section id="watchlistView" class="hidden">
+        <!-- 2. WATCHLIST VIEW -->
+        <section id="watchlistView" class="hidden px-4 py-5">
             <div class="mb-5">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-theme-muted mb-1">Your Library</p>
-                <div class="flex items-center justify-between">
-                    <h1 class="text-3xl font-extrabold">Watchlist</h1>
-                    <span id="syncModeBadge" class="text-xs px-2.5 py-1 rounded-full bg-theme-card border border-theme text-theme-muted flex items-center gap-1.5">
-                        <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Saved Locally
-                    </span>
-                </div>
+                <h1 class="text-3xl font-extrabold">Watchlist</h1>
             </div>
 
-            <!-- Watchlist / Watched Toggle Pills -->
             <div class="inline-flex p-1 rounded-xl bg-theme-card border border-theme mb-6">
                 <button onclick="switchLibraryTab('watchlist')" id="libTab-watchlist" class="px-4 py-2 rounded-lg text-xs font-bold bg-white text-black transition">
                     Watchlist <span id="libCountWatchlist" class="ml-1 opacity-70">0</span>
@@ -393,187 +355,254 @@
                 </button>
             </div>
 
-            <!-- Empty State Box -->
             <div id="watchlistEmptyState" class="p-10 rounded-2xl bg-theme-card border border-theme text-center my-4">
-                <h3 class="font-bold text-base mb-1">Nothing on your list yet</h3>
-                <p class="text-xs text-theme-muted max-w-xs mx-auto mb-5">Tap the bookmark icon on any movie, web series, or anime card to keep it here for later.</p>
-                <button onclick="switchView('home')" class="px-4 py-2 rounded-xl accent-bg text-white text-xs font-bold">Browse Reviews</button>
+                <h3 class="font-bold text-base mb-1">Nothing on your watchlist yet</h3>
+                <p class="text-xs text-theme-muted max-w-xs mx-auto">Tap Watchlist on any title's page to keep it here for later.</p>
             </div>
 
-            <!-- Watchlist Grid -->
-            <div id="watchlistGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            <div id="watchlistGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
         </section>
 
-        <!-- 3. FULL-PAGE MOVIE REVIEW & PARENTAL GUIDE VIEW -->
-        <section id="detailView" class="hidden">
-            <button onclick="switchView('home')" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-theme-card border border-theme text-xs font-semibold mb-4 hover:opacity-80">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Browse
-            </button>
+        <!-- 3. POST DETAIL VIEW (Matches Screenshots 1000058677 & 1000058676 + Video 1000058678) -->
+        <section id="detailView" class="hidden pb-12">
             <div id="detailContent"></div>
+        </section>
+
+        <!-- 4. ACTOR PROFILE & FILMOGRAPHY VIEW (Matches Video 0:13 - 0:27) -->
+        <section id="actorView" class="hidden px-4 py-6 pb-16">
+            <div id="actorContent"></div>
         </section>
 
     </main>
 
-    <!-- ================= LOGIN / CLOUD SYNC MODAL ================= -->
+    <!-- ================= LOGIN MODAL ================= -->
     <div id="authModal" class="fixed inset-0 z-50 drawer-backdrop hidden items-center justify-center p-4">
-        <div class="bg-theme-card border border-theme rounded-2xl max-w-sm w-full p-6 relative shadow-2xl">
+        <div class="bg-theme-card border border-theme rounded-2xl max-w-sm w-full p-6 relative">
             <button onclick="closeAuthModal()" class="absolute right-4 top-4 text-theme-muted hover:text-white">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <div class="w-11 h-11 rounded-2xl accent-soft-bg accent-text flex items-center justify-center mb-4">
-                <i data-lucide="cloud" class="w-6 h-6"></i>
-            </div>
-            <h3 class="text-lg font-extrabold mb-1">Cloud Watchlist Sync</h3>
-            <p class="text-xs text-theme-muted mb-4">Sign in to sync your local watchlist across your phone, PC, and any browser.</p>
-
+            <h3 class="text-lg font-extrabold mb-1">Account & Cloud Sync</h3>
+            <p class="text-xs text-theme-muted mb-4">Sign in to sync your watchlist across devices.</p>
             <form onsubmit="handleSimpleSyncLogin(event)" class="space-y-3">
-                <div>
-                    <label class="text-xs font-semibold text-theme-muted block mb-1">Your Name</label>
-                    <input type="text" id="authNameInput" required placeholder="e.g., Indra Mondal" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-main border border-theme text-sm focus:outline-none focus:border-rose-500">
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-theme-muted block mb-1">Email / Sync ID</label>
-                    <input type="email" id="authEmailInput" required placeholder="you@example.com" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-main border border-theme text-sm focus:outline-none focus:border-rose-500">
-                </div>
-                <button type="submit" class="w-full py-2.5 rounded-xl accent-bg text-white font-bold text-sm mt-2 hover:opacity-90 transition">
-                    Save & Enable Sync
-                </button>
+                <input type="text" id="authNameInput" required placeholder="Your Name (e.g. indra mondal)" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-main border border-theme text-sm">
+                <input type="email" id="authEmailInput" required placeholder="Email Address" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-main border border-theme text-sm">
+                <button type="submit" class="w-full py-2.5 rounded-xl accent-bg text-white font-bold text-sm">Save Account</button>
             </form>
-            <p class="text-[11px] text-theme-muted text-center mt-3">When Firebase Config is added in Admin Panel, this automatically syncs with Firestore.</p>
         </div>
     </div>
 
-    <!-- ================= FOOTER ================= -->
-    <footer class="border-t border-theme mt-12 py-8 px-4 bg-theme-card/50">
-        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-theme-muted">
-            <div>
-                <span class="font-extrabold text-sm text-theme-main"><span class="accent-text">CINE</span>GUIDE</span>
-                <p class="mt-1">Honest Movie, Series & Anime Reviews with Complete Parental Content Advisory.</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <a href="#" onclick="switchView('home'); return false;" class="hover:text-white">Home</a>
-                <a href="#" onclick="switchView('watchlist'); return false;" class="hover:text-white">Watchlist</a>
-                <a href="admin.html" class="hover:text-white">Admin Panel</a>
-            </div>
-        </div>
-    </footer>
-
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        // --- 1. SAMPLE REVIEW & PARENTAL GUIDE DATABASE ---
-        // (Automatically merges with any new reviews added via Admin Panel / Firebase)
+        // --- 1. ACTORS DATABASE (With Bio & Complete Filmography) ---
+        const actorsDB = {
+            "omar-sy": {
+                id: "omar-sy",
+                name: "Omar Sy",
+                roleType: "Acting",
+                born: "January 20, 1978 (age 48)",
+                birthplace: "Trappes, Yvelines, France",
+                photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+                bio: "Omar Sy (born 20 January 1978) is a French film actor, best known for his duo with Fred Testot, Omar et Fred, and for his role in The Intouchables, written and directed by Olivier Nakache and Éric Toledano, which became the second highest grossing French film of all time, and the international Netflix hit series Lupin.",
+                movies: [
+                    { title: "The Intouchables", year: "2011", rating: "8.5", type: "Movie", poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=500&q=80", linkedReviewId: "rev-2" },
+                    { title: "Jurassic World", year: "2015", rating: "6.9", type: "Movie", poster: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=500&q=80", linkedReviewId: null },
+                    { title: "X-Men: Days of Future Past", year: "2014", rating: "7.9", type: "Movie", poster: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=500&q=80", linkedReviewId: null },
+                    { title: "Inferno", year: "2016", rating: "6.2", type: "Movie", poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=500&q=80", linkedReviewId: null },
+                    { title: "The Book of Clarence", year: "2024", rating: "5.8", type: "Movie", poster: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&w=500&q=80", linkedReviewId: null },
+                    { title: "Two Is a Family", year: "2016", rating: "7.4", type: "Movie", poster: "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=500&q=80", linkedReviewId: null }
+                ],
+                series: [
+                    { title: "Lupin", year: "2021", rating: "7.8", type: "Series", poster: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=500&q=80", linkedReviewId: "rev-2" }
+                ]
+            },
+            "ludivine-sagnier": {
+                id: "ludivine-sagnier",
+                name: "Ludivine Sagnier",
+                roleType: "Acting",
+                born: "July 3, 1979 (age 46)",
+                birthplace: "La Celle-Saint-Cloud, France",
+                photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
+                bio: "Ludivine Sagnier is a French actress and model who has appeared in numerous acclaimed European and Hollywood productions, including Swimming Pool, Peter Pan, and the hit mystery series Lupin.",
+                movies: [
+                    { title: "Swimming Pool", year: "2003", rating: "6.7", type: "Movie", poster: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=500&q=80", linkedReviewId: null },
+                    { title: "Napoleon", year: "2023", rating: "6.4", type: "Movie", poster: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&w=500&q=80", linkedReviewId: null }
+                ],
+                series: [
+                    { title: "Lupin", year: "2021", rating: "7.8", type: "Series", poster: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=500&q=80", linkedReviewId: "rev-2" },
+                    { title: "The New Pope", year: "2020", rating: "8.1", type: "Series", poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=500&q=80", linkedReviewId: null }
+                ]
+            },
+            "park-정-min": {
+                id: "park-정-min",
+                name: "Park Jeong-min",
+                roleType: "Acting",
+                born: "March 24, 1987 (age 39)",
+                birthplace: "Ansan, Gyeonggi, South Korea",
+                photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80",
+                bio: "Park Jeong-min is an award-winning South Korean actor known for Bleak Night, Dongju: The Portrait of a Poet, Deliver Us from Evil, and Hellbound.",
+                movies: [
+                    { title: "The Ugly", year: "2025", rating: "6.6", type: "Movie", poster: "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=500&q=80", linkedReviewId: "rev-1" },
+                    { title: "Deliver Us from Evil", year: "2020", rating: "6.8", type: "Movie", poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=500&q=80", linkedReviewId: null }
+                ],
+                series: [
+                    { title: "Hellbound", year: "2021", rating: "6.6", type: "Series", poster: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=500&q=80", linkedReviewId: null }
+                ]
+            },
+            "kwon-hae-hyo": {
+                id: "kwon-hae-hyo",
+                name: "Kwon Hae-hyo",
+                roleType: "Acting",
+                born: "November 6, 1965 (age 60)",
+                birthplace: "Seoul, South Korea",
+                photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=600&q=80",
+                bio: "Kwon Hae-hyo is a veteran South Korean film, television and stage actor celebrated for his collaborations with auteur Hong Sang-soo and gripping thriller roles.",
+                movies: [
+                    { title: "The Ugly", year: "2025", rating: "6.6", type: "Movie", poster: "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=500&q=80", linkedReviewId: "rev-1" },
+                    { title: "Peninsula", year: "2020", rating: "5.5", type: "Movie", poster: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=500&q=80", linkedReviewId: null }
+                ],
+                series: []
+            }
+        };
+
+        // --- 2. MOVIES & SERIES DATABASE ---
         const defaultReviews = [
             {
                 id: "rev-1",
-                title: "The Runner",
-                year: "2026",
+                title: "The Ugly",
+                year: "2025",
+                tagline: "The barefaced truth comes out.",
                 category: "Movie",
-                industry: "Hollywood",
-                language: "English",
-                rating: "8.1",
-                ageRating: "PG-13",
-                safetyLevel: "Moderate", // Safe | Moderate | Strict
-                backdrop: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1000&q=80",
-                poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80",
+                industry: "Korean Movies",
+                breadcrumb: "MOVIES › KOREAN MOVIES",
+                language: "Korean",
+                rating: "6.6",
+                ageRating: "NR",
+                duration: "1h 42m",
+                platform: "AMZN",
+                postedAgo: "2 hours ago",
+                views: "231",
+                safetyLevel: "Moderate",
+                backdrop: "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1200&q=80",
+                poster: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&w=600&q=80",
+                stills: [
+                    "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1200&q=80",
+                    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80",
+                    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80"
+                ],
                 trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                genres: ["Sci-Fi", "Thriller", "Action"],
-                tags: ["Hollywood", "English", "2026", "No Nudity", "Mild Violence", "Sci-Fi", "Thriller"],
-                summary: "A high-stakes cybernetic courier races against a rogue syndicate across a neon-drenched metropolis to deliver a memory core that could save humanity.",
+                genres: ["Mystery", "Thriller"],
+                tags: ["Korean Movies", "Korean", "2025", "Zero Nudity", "Mystery", "Thriller"],
+                summary: "After the skeletal remains of a long-missing woman are uncovered after 40 years, her son and a documentary producer dig into the chilling secrets buried by their family and town.",
                 parentalGuide: {
-                    sexNudity: "None — 100% clean, zero intimate or suggestive scenes.",
-                    violence: "Moderate — Futuristic gunfights and martial arts sequences without graphic blood.",
-                    profanity: "Mild — Occasional mild action-movie language.",
-                    drugsAlcohol: "None — No smoking or substance abuse shown.",
-                    frightening: "Moderate — Tense chase scenes and loud sound effects."
+                    sexNudity: "None — Zero nudity or sexual scenes.",
+                    violence: "Moderate — Tense confrontations, skeletal remains, and dark murder investigation themes.",
+                    profanity: "Mild — Occasional tense dialogue.",
+                    drugsAlcohol: "Mild — Social drinking scenes.",
+                    frightening: "Moderate — Eerie atmosphere and psychological suspense."
                 },
-                verdict: "Safe for teenagers and family movie nights if kids are 12+."
+                verdict: "Clean from explicit scenes; safe for mature teens (14+) and mystery lovers.",
+                cast: [
+                    { actorId: "park-정-min", name: "Park Jeong-min", character: "Im Dong-hwan", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=500&q=80" },
+                    { actorId: "kwon-hae-hyo", name: "Kwon Hae-hyo", character: "Im Yeong-gyu", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=500&q=80" }
+                ],
+                episodes: []
             },
             {
                 id: "rev-2",
-                title: "Spirited Horizons",
-                year: "2025",
-                category: "Anime",
-                industry: "Japanese Anime",
-                language: "Japanese",
-                rating: "8.9",
-                ageRating: "G / All Ages",
-                safetyLevel: "Safe",
-                backdrop: "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1000&q=80",
-                poster: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80",
-                trailerUrl: "https://www.youtube.com/embed/ByXuk9QqQkk",
-                genres: ["Adventure", "Fantasy", "Family"],
-                tags: ["Japanese Anime", "Japanese", "2025", "No Nudity", "Action"],
-                summary: "A young village boy discovers an ancient sky-lantern that guides him to a floating island of forgotten spirits, teaching him courage and kindness.",
+                title: "Lupin",
+                year: "2021",
+                tagline: "Gentleman thief. Master of disguise.",
+                category: "TV Series",
+                industry: "Hollywood",
+                breadcrumb: "TV SERIES › MYSTERY & CRIME",
+                language: "French / English",
+                rating: "7.8",
+                ageRating: "TV-14",
+                duration: "45m / ep",
+                platform: "NF",
+                postedAgo: "5 hours ago",
+                views: "842",
+                safetyLevel: "Moderate",
+                backdrop: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80",
+                poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=600&q=80",
+                stills: [
+                    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80",
+                    "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1200&q=80"
+                ],
+                trailerUrl: "https://www.youtube.com/embed/ga0iTWXCGa0",
+                genres: ["Crime", "Mystery", "Action"],
+                tags: ["Hollywood", "English", "2024", "Zero Nudity", "Crime", "Mystery", "Action"],
+                summary: "Inspired by the adventures of Arsène Lupin, gentleman thief Assane Diop sets out to avenge his father for an injustice inflicted by a wealthy family.",
                 parentalGuide: {
-                    sexNudity: "None — Completely clean and wholesome.",
-                    violence: "None — Only harmless magical obstacles.",
-                    profanity: "None — Clean, respectful dialogue throughout.",
-                    drugsAlcohol: "None.",
-                    frightening: "Very Mild — Some mysterious spirit creatures that turn out to be friendly."
+                    sexNudity: "None — Only brief kissing, no nudity.",
+                    violence: "Moderate — Fistfights, heist chases, and non-graphic prison scenes.",
+                    profanity: "Mild — Occasional mild swearing.",
+                    drugsAlcohol: "Very Mild — Wine at high-society parties.",
+                    frightening: "Mild — Exciting heist suspense."
                 },
-                verdict: "100% Kids & Family Safe. A heartwarming masterpiece for all ages."
+                verdict: "Great family-friendly heist thriller for ages 13 and up.",
+                cast: [
+                    { actorId: "omar-sy", name: "Omar Sy", character: "Assane Diop", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80" },
+                    { actorId: "ludivine-sagnier", name: "Ludivine Sagnier", character: "Claire Laurent", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80" }
+                ],
+                episodes: [
+                    { ep: 1, title: "Chapter 1", rating: "7.7", desc: "Years after a tragic injustice, Assane seeks to settle a score — and a debt — by stealing a diamond necklace from the Louvre.", thumb: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80" },
+                    { ep: 2, title: "Chapter 2", rating: "7.7", desc: "Assane hatches a plot to contact an inmate who steers him to a clue about Babakar's demise.", thumb: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80" },
+                    { ep: 3, title: "Chapter 3", rating: "7.5", desc: "Assane confronts Commissioner Dumont and plants a decoy to divert the police.", thumb: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80" },
+                    { ep: 4, title: "Chapter 4", rating: "7.6", desc: "To retrieve incriminating evidence against Hubert, Assane enlists the help of a fearless journalist.", thumb: "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=600&q=80" }
+                ]
             },
             {
                 id: "rev-3",
-                title: "Backrooms: Echoes",
+                title: "Spirited Horizons",
                 year: "2026",
-                category: "Movie",
-                industry: "Hollywood",
-                language: "English",
-                rating: "7.6",
-                ageRating: "PG-13",
-                safetyLevel: "Moderate",
-                backdrop: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1000&q=80",
-                poster: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80",
-                trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                genres: ["Horror", "Mystery", "Sci-Fi"],
-                tags: ["Hollywood", "English", "2026", "No Nudity", "Horror", "Thriller"],
-                summary: "An amateur filmmaker accidentally clips through reality into an endless maze of humming yellow office rooms where time and physics no longer apply.",
+                tagline: "Beyond the clouds lies the forgotten realm.",
+                category: "Anime",
+                industry: "Anime Movies",
+                breadcrumb: "ANIME › JAPANESE ANIME",
+                language: "Japanese",
+                rating: "8.9",
+                ageRating: "G",
+                duration: "2h 05m",
+                platform: "CR",
+                postedAgo: "1 day ago",
+                views: "1.2K",
+                safetyLevel: "Safe",
+                backdrop: "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1200&q=80",
+                poster: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80",
+                stills: [
+                    "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1200&q=80"
+                ],
+                trailerUrl: "https://www.youtube.com/embed/ByXuk9QqQkk",
+                genres: ["Adventure", "Fantasy"],
+                tags: ["Anime Movies", "Japanese", "2026", "Zero Nudity", "Action"],
+                summary: "A young village boy discovers an ancient sky-lantern that guides him to a floating island of forgotten spirits, teaching him courage and kindness.",
                 parentalGuide: {
-                    sexNudity: "None — Zero nudity or sexual content.",
-                    violence: "Mild — Psychological tension rather than gore.",
-                    profanity: "Moderate — Panic-induced swearing in tense moments.",
+                    sexNudity: "None — 100% clean and wholesome.",
+                    violence: "None — Harmless fantasy adventure.",
+                    profanity: "None.",
                     drugsAlcohol: "None.",
-                    frightening: "High — Claustrophobic atmosphere, eerie sound design, and jump scares."
+                    frightening: "None — Safe for young kids."
                 },
-                verdict: "Clean from explicit content, but very spooky. Best for teens 14+ and horror fans."
-            },
-            {
-                id: "rev-4",
-                title: "Shadows of Seoul",
-                year: "2025",
-                category: "TV Series",
-                industry: "Korean",
-                language: "Korean",
-                rating: "8.5",
-                ageRating: "TV-MA (18+)",
-                safetyLevel: "Strict",
-                backdrop: "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1000&q=80",
-                poster: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&w=600&q=80",
-                trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                genres: ["Crime", "Thriller", "Drama"],
-                tags: ["Korean", "2025", "Thriller", "Drama"],
-                summary: "A relentless detective goes undercover inside a ruthless corporate syndicate, uncovering decades of corruption and underground crime.",
-                parentalGuide: {
-                    sexNudity: "Mild — Brief bar scenes, no explicit nudity.",
-                    violence: "Severe — Intense knife fights and realistic crime scenes.",
-                    profanity: "High — Strong language throughout.",
-                    drugsAlcohol: "Moderate — Characters frequently drink soju and smoke.",
-                    frightening: "High — Dark, gritty themes not suitable for children."
-                },
-                verdict: "Strictly for mature viewers (18+) due to heavy crime violence."
+                verdict: "100% Kids & Family Safe masterpiece.",
+                cast: [
+                    { actorId: "park-정-min", name: "Kenjiro Tsuda", character: "Spirit Guardian (Voice)", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=500&q=80" }
+                ],
+                episodes: []
             }
         ];
 
-        // --- 2. STATE MANAGEMENT ---
+        // --- 3. STATE VARIABLES ---
         let allReviews = [];
         let filteredReviews = [];
         let watchlistIds = JSON.parse(localStorage.getItem('cineguide_watchlist') || '[]');
         let watchedIds = JSON.parse(localStorage.getItem('cineguide_watched') || '[]');
         let currentUser = JSON.parse(localStorage.getItem('cineguide_user') || 'null');
         let currentLibraryTab = 'watchlist';
+        let currentDetailItem = null;
+        let currentStillIndex = 0;
 
-        // --- 3. INITIALIZE ON LOAD ---
+        // --- 4. INITIALIZATION ---
         window.addEventListener('DOMContentLoaded', () => {
             loadCustomThemeSettings();
             loadReviewsData();
@@ -583,12 +612,9 @@
             lucide.createIcons();
         });
 
-        // Load any custom theme saved from Admin Panel (localStorage or Firebase)
         function loadCustomThemeSettings() {
             const savedAccent = localStorage.getItem('cineguide_accent_color');
-            if (savedAccent) {
-                document.documentElement.style.setProperty('--accent', savedAccent);
-            }
+            if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
             const savedThemeMode = localStorage.getItem('cineguide_theme_mode') || 'dark';
             setThemeMode(savedThemeMode);
         }
@@ -600,214 +626,419 @@
             updateStatsBox();
         }
 
-        // Update 2x2 Stats Counter
         function updateStatsBox() {
             document.getElementById('statSafe').textContent = allReviews.filter(r => r.safetyLevel === 'Safe').length;
             document.getElementById('statModerate').textContent = allReviews.filter(r => r.safetyLevel === 'Moderate').length;
             document.getElementById('statStrict').textContent = allReviews.filter(r => r.safetyLevel === 'Strict').length;
-            document.getElementById('statTotal').textContent = allReviews.length;
+            document.getElementById('statTotal').textContent = allReviews.length + " Titles";
         }
 
-        // --- 4. RENDER MOVIE CARDS (Olamovies Wide Backdrop Card Style) ---
+        // --- 5. HOME CARDS RENDER (Matches Olamovies Home Cards) ---
         function renderHomeGrid() {
             const grid = document.getElementById('moviesGrid');
             if (filteredReviews.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full p-10 rounded-2xl bg-theme-card border border-theme text-center">
-                        <p class="font-bold text-base mb-1">No matching titles found</p>
-                        <p class="text-xs text-theme-muted mb-4">Try clearing your search or resetting the filters.</p>
-                        <button onclick="resetAllFilters()" class="px-4 py-2 rounded-xl accent-bg text-white text-xs font-bold">Show All Reviews</button>
-                    </div>`;
+                grid.innerHTML = `<div class="col-span-full p-10 rounded-2xl bg-theme-card border border-theme text-center">
+                    <p class="font-bold mb-2">No matching titles found</p>
+                    <button onclick="resetAllFilters()" class="px-4 py-2 rounded-xl accent-bg text-white text-xs font-bold">Reset Filters</button>
+                </div>`;
                 return;
             }
-
             grid.innerHTML = filteredReviews.map(item => createMovieCardHTML(item)).join('');
             lucide.createIcons();
         }
 
         function createMovieCardHTML(item) {
             const isBookmarked = watchlistIds.includes(item.id);
-            const isWatched = watchedIds.includes(item.id);
-
-            // Safety Badge Colors
-            let safetyBadgeClass = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
-            if (item.safetyLevel === "Moderate") safetyBadgeClass = "bg-amber-500/20 text-amber-300 border-amber-500/40";
-            if (item.safetyLevel === "Strict") safetyBadgeClass = "bg-rose-500/20 text-rose-300 border-rose-500/40";
+            let safetyBadge = item.safetyLevel === 'Safe' ? 'FAMILY SAFE' : (item.safetyLevel === 'Moderate' ? 'PG-13 GUIDE' : '18+ STRICT');
 
             return `
-            <article class="group rounded-2xl bg-theme-card border border-theme overflow-hidden hover:border-rose-500/40 transition flex flex-col">
-                <!-- Wide Backdrop Container -->
-                <div class="relative h-48 w-full overflow-hidden bg-black cursor-pointer" onclick="openDetailView('${item.id}')">
-                    <img src="${item.backdrop}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-85">
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#12141d] via-black/30 to-transparent"></div>
+            <article onclick="openDetailView('${item.id}')" class="group relative h-56 rounded-2xl overflow-hidden bg-black border border-theme cursor-pointer select-none shadow-lg">
+                <img src="${item.backdrop}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-85">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
 
-                    <!-- Top Left: Category Pill -->
-                    <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[11px] font-bold uppercase tracking-wider text-white border border-white/10">
-                        ${item.industry || item.category}
-                    </span>
+                <!-- Top Right Platform Badge -->
+                <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/65 backdrop-blur-md text-[11px] font-bold uppercase text-white border border-white/15">
+                    ${item.platform || 'HD'}
+                </span>
 
-                    <!-- Top Right: IMDb Rating Badge -->
-                    <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md text-xs font-bold text-amber-400 flex items-center gap-1 border border-amber-400/20">
-                        ★ ${item.rating}
-                    </span>
-
-                    <!-- Bottom Left: Watchlist Quick Toggle Button (Matches video icon) -->
-                    <button onclick="event.stopPropagation(); toggleWatchlist('${item.id}')" 
-                        class="absolute bottom-3 left-3 w-9 h-9 rounded-xl ${isBookmarked ? 'accent-bg text-white' : 'bg-black/75 text-white hover:bg-black'} backdrop-blur-md border border-white/15 flex items-center justify-center transition" 
-                        title="${isBookmarked ? 'Remove from Watchlist' : 'Add to Watchlist'}">
-                        <i data-lucide="${isBookmarked ? 'bookmark-check' : 'bookmark-plus'}" class="w-4 h-4"></i>
-                    </button>
-
-                    <!-- Bottom Right: Parental Safety Pill (Replaces file size like 11.07 GB) -->
-                    <div class="absolute bottom-3 right-3 text-right">
-                        <span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border backdrop-blur-md ${safetyBadgeClass}">
-                            ${item.safetyLevel === 'Safe' ? '✓ Family Safe' : item.ageRating}
-                        </span>
-                    </div>
+                <!-- Center Big Stylized Title -->
+                <div class="absolute inset-x-4 bottom-12">
+                    <h3 class="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-md uppercase">${item.title} <span class="text-base font-semibold opacity-75">${item.year}</span></h3>
                 </div>
 
-                <!-- Card Body -->
-                <div class="p-4 flex-1 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between gap-2 mb-1">
-                            <h3 onclick="openDetailView('${item.id}')" class="font-extrabold text-base hover:text-rose-400 cursor-pointer truncate">${item.title} (${item.year})</h3>
-                            <button onclick="toggleWatched('${item.id}')" class="text-xs px-2 py-0.5 rounded-md border ${isWatched ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-theme text-theme-muted'} hover:opacity-80" title="Mark as Watched">
-                                ${isWatched ? '✓ Watched' : 'Mark Seen'}
-                            </button>
-                        </div>
-                        <p class="text-xs text-theme-muted line-clamp-2 mb-3">${item.summary}</p>
-                    </div>
+                <!-- Bottom Left: Watchlist Button & Industry -->
+                <div class="absolute bottom-3 left-3 flex items-center gap-2.5">
+                    <button onclick="event.stopPropagation(); toggleWatchlist('${item.id}')" class="w-9 h-9 rounded-xl ${isBookmarked ? 'accent-bg text-white' : 'bg-black/70 text-white hover:bg-black'} backdrop-blur-md border border-white/15 flex items-center justify-center transition">
+                        <i data-lucide="${isBookmarked ? 'bookmark-check' : 'bookmark-plus'}" class="w-4 h-4"></i>
+                    </button>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-300">${item.industry}</span>
+                </div>
 
-                    <div class="pt-3 border-t border-theme flex items-center justify-between text-xs">
-                        <span class="text-theme-muted truncate max-w-[65%]">${item.genres.join(' • ')}</span>
-                        <button onclick="openDetailView('${item.id}')" class="accent-text font-bold hover:underline flex items-center gap-1">
-                            Parental Guide <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
+                <!-- Bottom Right: Rating & Parental Label -->
+                <div class="absolute bottom-3 right-3 text-right">
+                    <div class="text-xs font-extrabold text-amber-400">★ ${item.rating}</div>
+                    <div class="text-[11px] font-bold text-gray-300">${safetyBadge}</div>
                 </div>
             </article>`;
         }
 
-        // --- 5. FULL-PAGE DETAIL & PARENTAL GUIDE VIEW ---
+        // --- 6. POST DETAIL VIEW (Exact Match to Screenshots 1000058677, 1000058676 & Video 1000058678) ---
         function openDetailView(id) {
             const item = allReviews.find(r => r.id === id);
             if (!item) return;
+            currentDetailItem = item;
+            currentStillIndex = 0;
 
+            renderDetailContent();
+            switchView('detail');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function changeHeroStill(dir) {
+            if (!currentDetailItem) return;
+            const stills = currentDetailItem.stills && currentDetailItem.stills.length ? currentDetailItem.stills : [currentDetailItem.backdrop];
+            currentStillIndex = (currentStillIndex + dir + stills.length) % stills.length;
+            document.getElementById('detailHeroImg').src = stills[currentStillIndex];
+            document.getElementById('detailSlideCounter').textContent = `${currentStillIndex + 1} / ${stills.length}`;
+        }
+
+        function renderDetailContent() {
+            const item = currentDetailItem;
             const isBookmarked = watchlistIds.includes(item.id);
-            const container = document.getElementById('detailContent');
+            const isWatched = watchedIds.includes(item.id);
+            const stills = item.stills && item.stills.length ? item.stills : [item.backdrop];
+            const currentIndexInAll = allReviews.findIndex(r => r.id === item.id) + 1;
 
+            // Keep Binging (Related Recommendations)
+            const relatedItems = allReviews.filter(r => r.id !== item.id);
+
+            const container = document.getElementById('detailContent');
             container.innerHTML = `
-                <div class="rounded-3xl bg-theme-card border border-theme overflow-hidden">
-                    <!-- Top Hero Banner -->
-                    <div class="relative h-64 sm:h-80 w-full">
-                        <img src="${item.backdrop}" class="w-full h-full object-cover opacity-60">
-                        <div class="absolute inset-0 bg-gradient-to-t from-[#12141d] via-[#12141d]/60 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4 right-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                            <div>
-                                <span class="px-2.5 py-1 rounded-lg accent-bg text-white text-xs font-bold uppercase">${item.category} • ${item.industry}</span>
-                                <h1 class="text-2xl sm:text-4xl font-extrabold mt-2">${item.title} <span class="text-theme-muted font-normal">(${item.year})</span></h1>
-                                <p class="text-xs text-theme-muted mt-1">${item.genres.join(' • ')} • Language: ${item.language}</p>
+                <!-- TOP HERO IMAGE SLIDER (Matches Screenshot 1 & 2) -->
+                <div class="relative w-full h-[340px] sm:h-[420px] bg-black overflow-hidden">
+                    <img id="detailHeroImg" src="${stills[currentStillIndex]}" class="w-full h-full object-cover opacity-85 transition duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#090a0f] via-[#090a0f]/40 to-transparent"></div>
+
+                    <!-- Top Left Counter Pill (e.g., 5 / 30 II) -->
+                    <div class="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-3 text-xs font-bold text-white">
+                        <span id="detailSlideCounter">${currentIndexInAll} / ${allReviews.length}</span>
+                        <span class="opacity-70">||</span>
+                    </div>
+
+                    <!-- Left / Right Slider Arrows -->
+                    <button onclick="changeHeroStill(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-black transition">
+                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="changeHeroStill(1)" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-black transition">
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+
+                    <!-- Title & Tagline Overlay -->
+                    <div class="absolute bottom-4 left-4 right-4">
+                        <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white">
+                            ${item.title} <span class="font-normal text-gray-400">${item.year}</span>
+                        </h1>
+                        <p class="text-sm italic text-gray-300 mt-1">${item.tagline || item.summary.slice(0, 60) + '...'}</p>
+                    </div>
+                </div>
+
+                <!-- MAIN INFO BLOCK (Poster Left + Meta Pills Right - Matches Screenshot) -->
+                <div class="px-4 pt-2">
+                    <div class="flex gap-4 items-start mb-6">
+                        <!-- Left Poster with Floating Icons -->
+                        <div class="relative w-32 sm:w-40 shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+                            <img src="${item.poster}" alt="${item.title}" class="w-full h-48 sm:h-56 object-cover">
+                            <!-- Floating Chat/Review Counter Icon -->
+                            <div class="absolute bottom-2 left-2 w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-lg">
+                                <i data-lucide="message-square" class="w-5 h-5"></i>
+                                <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-bold rounded-full">5</span>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <button onclick="toggleWatchlist('${item.id}'); openDetailView('${item.id}');" class="px-4 py-2.5 rounded-xl ${isBookmarked ? 'bg-emerald-600 text-white' : 'accent-bg text-white'} font-bold text-xs flex items-center gap-2">
-                                    <i data-lucide="bookmark" class="w-4 h-4"></i>
-                                    ${isBookmarked ? 'In Watchlist' : 'Add to Watchlist'}
-                                </button>
+                        </div>
+
+                        <!-- Right Metadata Pills -->
+                        <div class="flex-1 pt-1">
+                            <div class="flex flex-wrap gap-2 mb-2.5">
+                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-xs font-bold">${item.ageRating}</span>
+                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-xs font-bold">${item.duration || '1h 50m'}</span>
+                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-xs font-bold">${item.platform || 'HD'}</span>
+                            </div>
+
+                            <div class="inline-block px-3.5 py-1.5 rounded-full bg-theme-card border border-theme text-xs font-semibold mb-4">
+                                ${item.genres.join(' · ')}
+                            </div>
+
+                            <p class="text-xs font-bold tracking-wider uppercase text-theme-muted mb-2">${item.breadcrumb || 'MOVIES › GENERAL'}</p>
+
+                            <div class="flex flex-wrap items-center gap-3 text-xs text-theme-muted">
+                                <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> ${item.postedAgo || 'Recently'}</span>
+                                <span class="flex items-center gap-1"><i data-lucide="eye" class="w-3.5 h-3.5"></i> ${item.views || '120'}</span>
+                                <span class="flex items-center gap-1 accent-text font-semibold"><i data-lucide="flag" class="w-3.5 h-3.5"></i> Safe Guide</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="p-5 sm:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <!-- Left Column: Story & Verdict -->
-                        <div class="lg:col-span-2 space-y-6">
-                            <div>
-                                <h2 class="text-sm font-bold uppercase tracking-wider text-theme-muted mb-2">Story & Review Summary</h2>
-                                <p class="text-sm leading-relaxed">${item.summary}</p>
+                    <!-- ACTION BUTTONS STACK (Matches Red Bar + Trailer/IMDb + Watchlist/Watched) -->
+                    <div class="space-y-2.5 mb-8">
+                        <!-- Big Coral/Red Primary Action Button (Scrolls to Parental Guide instead of pirated download) -->
+                        <button onclick="document.getElementById('parentalSection').scrollIntoView({behavior: 'smooth'})" class="w-full py-3.5 px-5 rounded-2xl bg-[#e0533c] hover:bg-[#d04630] text-white font-bold flex items-center justify-between shadow-lg transition">
+                            <span class="flex items-center gap-2.5 text-sm sm:text-base">
+                                <i data-lucide="shield-check" class="w-5 h-5"></i> Parental Guide & Safety Verdict
+                            </span>
+                            <span class="px-3 py-1 rounded-xl bg-black/25 text-xs font-extrabold uppercase">
+                                ${item.safetyLevel}
+                            </span>
+                        </button>
+
+                        <!-- Row 2: Trailer | IMDb Rating | Google Search -->
+                        <div class="grid grid-cols-12 gap-2.5">
+                            <button onclick="toggleTrailerModal()" class="col-span-5 py-3 rounded-2xl bg-theme-card border border-theme hover:border-white/20 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
+                                <i data-lucide="play" class="w-4 h-4 fill-current"></i> Trailer
+                            </button>
+                            <div class="col-span-5 py-3 rounded-2xl bg-theme-card border border-theme font-bold text-xs sm:text-sm flex items-center justify-center gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-amber-400 text-black text-[11px] font-black">IMDb</span>
+                                <span>★ ${item.rating}</span>
                             </div>
+                            <a href="https://www.google.com/search?q=${encodeURIComponent(item.title + ' ' + item.year)}" target="_blank" class="col-span-2 py-3 rounded-2xl bg-theme-card border border-theme flex items-center justify-center font-extrabold text-sm text-blue-400 hover:bg-theme-elevated">
+                                G
+                            </a>
+                        </div>
 
-                            <!-- PARENTAL GUIDANCE BOX -->
-                            <div class="p-5 rounded-2xl bg-theme-main border border-theme">
-                                <div class="flex items-center justify-between mb-4">
-                                    <h3 class="font-extrabold text-base flex items-center gap-2">
-                                        <i data-lucide="shield-alert" class="w-5 h-5 accent-text"></i>
-                                        Parental Guidance & Content Advisory
-                                    </h3>
-                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-theme-card border border-theme">${item.ageRating}</span>
-                                </div>
+                        <!-- Row 3: Watchlist | Watched -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button onclick="toggleWatchlist('${item.id}'); renderDetailContent();" class="py-3 rounded-2xl bg-theme-card border ${isBookmarked ? 'accent-border accent-text' : 'border-theme'} font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
+                                <i data-lucide="bookmark" class="w-4 h-4"></i> ${isBookmarked ? 'In Watchlist' : 'Watchlist'}
+                            </button>
+                            <button onclick="toggleWatched('${item.id}'); renderDetailContent();" class="py-3 rounded-2xl bg-theme-card border ${isWatched ? 'border-emerald-500/50 text-emerald-400' : 'border-theme'} font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
+                                <i data-lucide="eye" class="w-4 h-4"></i> ${isWatched ? 'Watched ✓' : 'Watched'}
+                            </button>
+                        </div>
+                    </div>
 
-                                <div class="space-y-3 text-xs sm:text-sm">
-                                    <div class="p-3 rounded-xl bg-theme-card border border-theme">
-                                        <span class="font-bold text-rose-400 block mb-0.5">Sex & Nudity:</span>
-                                        <span class="text-theme-muted">${item.parentalGuide.sexNudity}</span>
-                                    </div>
-                                    <div class="p-3 rounded-xl bg-theme-card border border-theme">
-                                        <span class="font-bold text-amber-400 block mb-0.5">Violence & Gore:</span>
-                                        <span class="text-theme-muted">${item.parentalGuide.violence}</span>
-                                    </div>
-                                    <div class="p-3 rounded-xl bg-theme-card border border-theme">
-                                        <span class="font-bold text-purple-400 block mb-0.5">Profanity / Language:</span>
-                                        <span class="text-theme-muted">${item.parentalGuide.profanity}</span>
-                                    </div>
-                                    <div class="p-3 rounded-xl bg-theme-card border border-theme">
-                                        <span class="font-bold text-blue-400 block mb-0.5">Drugs, Alcohol & Smoking:</span>
-                                        <span class="text-theme-muted">${item.parentalGuide.drugsAlcohol}</span>
-                                    </div>
-                                    <div class="p-3 rounded-xl bg-theme-card border border-theme">
-                                        <span class="font-bold text-emerald-400 block mb-0.5">Final Family Verdict:</span>
-                                        <span class="text-theme-main font-medium">${item.verdict}</span>
+                    <!-- HIDDEN TRAILER EMBED BOX -->
+                    <div id="trailerBox" class="hidden mb-8">
+                        <div class="aspect-video rounded-2xl overflow-hidden bg-black border border-theme">
+                            <iframe src="${item.trailerUrl}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <!-- EPISODES SECTION (If TV Series / Anime - Matches Video 0:04 - 0:10) -->
+                    ${item.episodes && item.episodes.length > 0 ? `
+                    <div class="mb-8">
+                        <h2 class="text-lg font-extrabold mb-3">Episodes</h2>
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <button class="px-3.5 py-1.5 rounded-xl bg-theme-card border border-theme text-xs font-bold flex items-center gap-2">
+                                Season 1 • ${item.episodes.length} ep <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                            ${item.episodes.map(ep => `
+                                <div class="min-w-[260px] sm:min-w-[300px] rounded-2xl overflow-hidden bg-theme-card border border-theme relative p-4 flex flex-col justify-end h-40">
+                                    <img src="${ep.thumb}" class="absolute inset-0 w-full h-full object-cover opacity-35">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent"></div>
+                                    <div class="relative z-10">
+                                        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-300">EPISODE ${ep.ep}</p>
+                                        <h4 class="font-extrabold text-base text-white mb-1">${ep.title}</h4>
+                                        <p class="text-xs text-gray-300 line-clamp-2 mb-2">${ep.desc}</p>
+                                        <div class="flex items-center justify-between text-xs text-amber-400 font-bold">
+                                            <span>▶ Review</span>
+                                            <span>★ ${ep.rating}</span>
+                                        </div>
                                     </div>
                                 </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- ACTORS / CAST SECTION (Matches Video 0:01 - 0:13 + Circular Avatars) -->
+                    <div class="mb-8">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-lg font-extrabold">Actors & Cast</h2>
+                            <span class="text-xs text-theme-muted">Tap any actor for biography & filmography</span>
+                        </div>
+
+                        <!-- Circular Quick Avatars Row -->
+                        <div class="flex items-center gap-4 overflow-x-auto no-scrollbar pb-3 mb-3">
+                            ${item.cast.map(c => `
+                                <button onclick="openActorProfile('${c.actorId}')" class="flex flex-col items-center text-center shrink-0 group">
+                                    <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-white/15 group-hover:border-rose-500 transition p-0.5 bg-theme-card">
+                                        <img src="${c.photo}" alt="${c.name}" class="w-full h-full object-cover rounded-full">
+                                    </div>
+                                    <span class="text-xs font-bold mt-1.5 group-hover:text-rose-400">${c.name}</span>
+                                    <span class="text-[10px] text-theme-muted">${c.character}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+
+                        <!-- Portrait Actor Cards (Exact match to Video 0:01) -->
+                        <div class="flex gap-3.5 overflow-x-auto no-scrollbar pb-2">
+                            ${item.cast.map(c => `
+                                <div onclick="openActorProfile('${c.actorId}')" class="w-36 sm:w-40 shrink-0 cursor-pointer group">
+                                    <div class="h-44 sm:h-48 rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2">
+                                        <img src="${c.photo}" alt="${c.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                    </div>
+                                    <h4 class="font-bold text-sm truncate group-hover:text-rose-400">${c.name}</h4>
+                                    <p class="text-xs text-theme-muted truncate">${c.character}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- PARENTAL GUIDANCE & STORY REVIEW SECTION -->
+                    <div id="parentalSection" class="p-5 rounded-2xl bg-theme-card border border-theme mb-8">
+                        <h2 class="text-lg font-extrabold mb-2 flex items-center gap-2">
+                            <i data-lucide="shield-alert" class="w-5 h-5 accent-text"></i> Story & Parental Content Guide
+                        </h2>
+                        <p class="text-xs sm:text-sm text-theme-muted leading-relaxed mb-5">${item.summary}</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
+                                <span class="font-bold text-rose-400 block mb-1">Sex & Nudity</span>
+                                <p class="text-theme-muted">${item.parentalGuide.sexNudity}</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
+                                <span class="font-bold text-amber-400 block mb-1">Violence & Gore</span>
+                                <p class="text-theme-muted">${item.parentalGuide.violence}</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
+                                <span class="font-bold text-purple-400 block mb-1">Profanity & Language</span>
+                                <p class="text-theme-muted">${item.parentalGuide.profanity}</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
+                                <span class="font-bold text-blue-400 block mb-1">Drugs, Alcohol & Smoking</span>
+                                <p class="text-theme-muted">${item.parentalGuide.drugsAlcohol}</p>
                             </div>
                         </div>
 
-                        <!-- Right Column: Embedded Official Trailer -->
-                        <div>
-                            <h2 class="text-sm font-bold uppercase tracking-wider text-theme-muted mb-2">Official Trailer</h2>
-                            <div class="aspect-video rounded-2xl overflow-hidden bg-black border border-theme mb-4">
-                                <iframe src="${item.trailerUrl}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
-                            </div>
-                            <div class="p-4 rounded-2xl bg-theme-main border border-theme text-xs space-y-2">
-                                <div class="flex justify-between"><span class="text-theme-muted">IMDb / User Rating:</span><span class="font-bold text-amber-400">★ ${item.rating} / 10</span></div>
-                                <div class="flex justify-between"><span class="text-theme-muted">Safety Classification:</span><span class="font-bold">${item.safetyLevel}</span></div>
-                                <div class="flex justify-between"><span class="text-theme-muted">Audio / Language:</span><span class="font-bold">${item.language}</span></div>
-                            </div>
+                        <div class="mt-3 p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-700/40 text-xs">
+                            <span class="font-bold text-emerald-400 block mb-0.5">Final Family Verdict:</span>
+                            <span class="text-white">${item.verdict}</span>
+                        </div>
+                    </div>
+
+                    <!-- KEEP BINGING SECTION (Matches Video 0:11) -->
+                    <div>
+                        <h2 class="text-lg font-extrabold mb-3">Keep Binging</h2>
+                        <div class="grid grid-cols-2 gap-3.5">
+                            ${relatedItems.map(rel => `
+                                <div onclick="openDetailView('${rel.id}')" class="cursor-pointer group">
+                                    <div class="relative h-28 sm:h-36 rounded-2xl overflow-hidden bg-theme-card border border-theme mb-1.5">
+                                        <img src="${rel.backdrop}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                                        <span class="absolute bottom-2 left-2.5 text-sm font-black text-white uppercase">${rel.title}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[11px] text-theme-muted">
+                                        <span class="px-1.5 py-0.5 rounded bg-theme-card border border-theme text-amber-400 font-bold">★ ${rel.rating}</span>
+                                        <span>${rel.year} • ${rel.category.toUpperCase()}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 </div>
             `;
-
-            switchView('detail');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
             lucide.createIcons();
         }
 
-        // --- 6. WATCHLIST & WATCHED LOGIC (Local + Ready for Cloud Sync) ---
+        function toggleTrailerModal() {
+            const box = document.getElementById('trailerBox');
+            box.classList.toggle('hidden');
+        }
+
+        // --- 7. ACTOR BIO & FILMOGRAPHY VIEW (Exact Match to Video 0:13 - 0:27) ---
+        let currentActorObj = null;
+        let currentActorTab = 'movies';
+
+        function openActorProfile(actorId) {
+            const actor = actorsDB[actorId];
+            if (!actor) {
+                alert("Full biography for this actor will be fetched automatically via TMDB API!");
+                return;
+            }
+            currentActorObj = actor;
+            currentActorTab = 'movies';
+            renderActorView();
+            switchView('actor');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function switchActorTab(tab) {
+            currentActorTab = tab;
+            renderActorView();
+        }
+
+        function renderActorView() {
+            const actor = currentActorObj;
+            const list = currentActorTab === 'movies' ? actor.movies : actor.series;
+
+            const container = document.getElementById('actorContent');
+            container.innerHTML = `
+                <!-- Top Back Button -->
+                <button onclick="switchView('detail')" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-theme-card border border-theme text-xs font-semibold mb-6 hover:opacity-80">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Title
+                </button>
+
+                <!-- Centered Portrait & Bio (Matches Video 0:13) -->
+                <div class="max-w-md mx-auto text-center mb-8">
+                    <div class="w-44 h-56 mx-auto rounded-3xl overflow-hidden border border-white/15 shadow-2xl mb-4 bg-theme-card">
+                        <img src="${actor.photo}" alt="${actor.name}" class="w-full h-full object-cover">
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold mb-2">${actor.name}</h1>
+                    <p class="text-xs text-theme-muted mb-1">${actor.roleType} &nbsp;•&nbsp; Born ${actor.born}</p>
+                    <p class="text-xs text-theme-muted mb-4">• ${actor.birthplace}</p>
+
+                    <p id="actorBioText" class="text-xs sm:text-sm text-gray-300 leading-relaxed line-clamp-4">${actor.bio}</p>
+                    <button onclick="document.getElementById('actorBioText').classList.toggle('line-clamp-4')" class="text-xs font-bold text-white mt-2 hover:underline">Read more</button>
+                </div>
+
+                <!-- Movies / Series Count Tabs (Matches Video 0:16) -->
+                <div class="border-b border-theme flex items-center gap-6 mb-5">
+                    <button onclick="switchActorTab('movies')" class="pb-2.5 border-b-2 ${currentActorTab === 'movies' ? 'border-white text-white font-extrabold' : 'border-transparent text-theme-muted font-medium'} text-sm flex items-center gap-1.5">
+                        <span>Movies</span>
+                        <span class="text-xs opacity-60">${actor.movies.length}</span>
+                    </button>
+                    <button onclick="switchActorTab('series')" class="pb-2.5 border-b-2 ${currentActorTab === 'series' ? 'border-white text-white font-extrabold' : 'border-transparent text-theme-muted font-medium'} text-sm flex items-center gap-1.5">
+                        <span>Series</span>
+                        <span class="text-xs opacity-60">${actor.series.length}</span>
+                    </button>
+                </div>
+
+                <!-- 2-Column Filmography Poster Grid (Matches Video 0:17 - 0:27) -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    ${list.map(work => `
+                        <div onclick="${work.linkedReviewId ? `openDetailView('${work.linkedReviewId}')` : `alert('Review for ${work.title} can be published from Admin Panel!')`}" class="cursor-pointer group">
+                            <div class="aspect-[2/3] rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2">
+                                <img src="${work.poster}" alt="${work.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            </div>
+                            <h4 class="font-bold text-sm truncate group-hover:text-rose-400">${work.title}</h4>
+                            <p class="text-xs text-theme-muted mt-0.5">★ ${work.rating} &nbsp;•&nbsp; ${work.year} &nbsp;•&nbsp; ${work.type}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // --- 8. WATCHLIST & NAVIGATION HELPERS ---
         function toggleWatchlist(id) {
             if (watchlistIds.includes(id)) {
-                watchlistIds = watchlistIds.filter(item => item !== id);
+                watchlistIds = watchlistIds.filter(i => i !== id);
             } else {
                 watchlistIds.push(id);
             }
             localStorage.setItem('cineguide_watchlist', JSON.stringify(watchlistIds));
             updateWatchlistCounters();
             renderHomeGrid();
-            if (!document.getElementById('watchlistView').classList.contains('hidden')) {
-                renderWatchlistView();
-            }
         }
 
         function toggleWatched(id) {
             if (watchedIds.includes(id)) {
-                watchedIds = watchedIds.filter(item => item !== id);
+                watchedIds = watchedIds.filter(i => i !== id);
             } else {
                 watchedIds.push(id);
             }
             localStorage.setItem('cineguide_watched', JSON.stringify(watchedIds));
             updateWatchlistCounters();
-            renderHomeGrid();
-            if (!document.getElementById('watchlistView').classList.contains('hidden')) {
-                renderWatchlistView();
-            }
         }
 
         function updateWatchlistCounters() {
@@ -819,36 +1050,26 @@
 
         function switchLibraryTab(tab) {
             currentLibraryTab = tab;
-            const wBtn = document.getElementById('libTab-watchlist');
-            const sBtn = document.getElementById('libTab-watched');
-
-            if (tab === 'watchlist') {
-                wBtn.className = "px-4 py-2 rounded-lg text-xs font-bold bg-white text-black transition";
-                sBtn.className = "px-4 py-2 rounded-lg text-xs font-bold text-theme-muted hover:text-white transition";
-            } else {
-                sBtn.className = "px-4 py-2 rounded-lg text-xs font-bold bg-white text-black transition";
-                wBtn.className = "px-4 py-2 rounded-lg text-xs font-bold text-theme-muted hover:text-white transition";
-            }
+            document.getElementById('libTab-watchlist').className = tab === 'watchlist' ? "px-4 py-2 rounded-lg text-xs font-bold bg-white text-black" : "px-4 py-2 rounded-lg text-xs font-bold text-theme-muted";
+            document.getElementById('libTab-watched').className = tab === 'watched' ? "px-4 py-2 rounded-lg text-xs font-bold bg-white text-black" : "px-4 py-2 rounded-lg text-xs font-bold text-theme-muted";
             renderWatchlistView();
         }
 
         function renderWatchlistView() {
-            const targetIds = currentLibraryTab === 'watchlist' ? watchlistIds : watchedIds;
-            const items = allReviews.filter(r => targetIds.includes(r.id));
-            const emptyState = document.getElementById('watchlistEmptyState');
+            const ids = currentLibraryTab === 'watchlist' ? watchlistIds : watchedIds;
+            const items = allReviews.filter(r => ids.includes(r.id));
+            const empty = document.getElementById('watchlistEmptyState');
             const grid = document.getElementById('watchlistGrid');
-
             if (items.length === 0) {
-                emptyState.classList.remove('hidden');
+                empty.classList.remove('hidden');
                 grid.innerHTML = '';
             } else {
-                emptyState.classList.add('hidden');
-                grid.innerHTML = items.map(item => createMovieCardHTML(item)).join('');
+                empty.classList.add('hidden');
+                grid.innerHTML = items.map(i => createMovieCardHTML(i)).join('');
                 lucide.createIcons();
             }
         }
 
-        // --- 7. NAVIGATION, DRAWER & FILTER FUNCTIONS ---
         function toggleMenu(open) {
             const backdrop = document.getElementById('menuBackdrop');
             const drawer = document.getElementById('menuDrawer');
@@ -863,46 +1084,29 @@
             }
         }
 
-        function switchView(viewName) {
-            document.getElementById('homeView').classList.add('hidden');
-            document.getElementById('watchlistView').classList.add('hidden');
-            document.getElementById('detailView').classList.add('hidden');
-
-            if (viewName === 'home') {
-                document.getElementById('homeView').classList.remove('hidden');
-                renderHomeGrid();
-            } else if (viewName === 'watchlist') {
-                document.getElementById('watchlistView').classList.remove('hidden');
-                renderWatchlistView();
-            } else if (viewName === 'detail') {
-                document.getElementById('detailView').classList.remove('hidden');
-            }
+        function switchView(view) {
+            ['homeView', 'watchlistView', 'detailView', 'actorView'].forEach(v => document.getElementById(v).classList.add('hidden'));
+            document.getElementById(`${view}View`).classList.remove('hidden');
+            if (view === 'watchlist') renderWatchlistView();
+            if (view === 'home') renderHomeGrid();
         }
 
         function filterByMainCategory(cat) {
             switchView('home');
             document.querySelectorAll('.cat-tab').forEach(btn => {
-                if (btn.dataset.cat === cat) {
-                    btn.classList.add('border-rose-600', 'text-white');
-                    btn.classList.remove('border-transparent', 'text-theme-muted');
-                } else {
-                    btn.classList.remove('border-rose-600', 'text-white');
-                    btn.classList.add('border-transparent', 'text-theme-muted');
-                }
+                btn.className = btn.dataset.cat === cat 
+                    ? "cat-tab pb-2 border-b-2 border-rose-600 text-white whitespace-nowrap transition"
+                    : "cat-tab pb-2 border-b-2 border-transparent text-theme-muted hover:text-white whitespace-nowrap transition";
             });
-
             if (cat === 'All') {
                 filteredReviews = [...allReviews];
-                document.getElementById('currentCategoryTitle').textContent = "Latest Reviews";
-                document.getElementById('activeFilterLabel').textContent = "All titles • no active filters";
+                document.getElementById('currentCategoryTitle').textContent = "Latest uploads";
             } else if (cat === 'Family Safe') {
                 filteredReviews = allReviews.filter(r => r.safetyLevel === 'Safe');
-                document.getElementById('currentCategoryTitle').textContent = "100% Kids & Family Safe";
-                document.getElementById('activeFilterLabel').textContent = "Filtered by: Family Safe";
+                document.getElementById('currentCategoryTitle').textContent = "Family Safe Collections";
             } else {
                 filteredReviews = allReviews.filter(r => r.category === cat);
-                document.getElementById('currentCategoryTitle').textContent = `${cat} Reviews`;
-                document.getElementById('activeFilterLabel').textContent = `Category: ${cat}`;
+                document.getElementById('currentCategoryTitle').textContent = cat;
             }
             renderHomeGrid();
         }
@@ -910,9 +1114,9 @@
         function filterByTag(tag) {
             toggleMenu(false);
             switchView('home');
-            filteredReviews = allReviews.filter(r => r.tags.includes(tag) || r.industry === tag || r.language === tag || r.year === tag);
-            document.getElementById('currentCategoryTitle').textContent = `${tag} Collection`;
-            document.getElementById('activeFilterLabel').textContent = `Active Filter: ${tag}`;
+            filteredReviews = allReviews.filter(r => r.tags.includes(tag) || r.industry === tag || r.language === tag || r.year === tag || r.genres.includes(tag));
+            document.getElementById('currentCategoryTitle').textContent = tag;
+            document.getElementById('activeFilterLabel').textContent = `Filtered by: ${tag}`;
             renderHomeGrid();
         }
 
@@ -920,48 +1124,24 @@
             toggleMenu(false);
             switchView('home');
             filteredReviews = allReviews.filter(r => r.safetyLevel === level);
-            document.getElementById('currentCategoryTitle').textContent = `Safety Level: ${level}`;
-            document.getElementById('activeFilterLabel').textContent = `Parental Filter: ${level}`;
+            document.getElementById('currentCategoryTitle').textContent = `Safety: ${level}`;
             renderHomeGrid();
         }
 
         function sortItems(type) {
-            document.querySelectorAll('.sort-btn').forEach(b => {
-                b.className = "sort-btn py-2 rounded-lg text-theme-muted hover:text-white transition";
-            });
-            document.getElementById(`sort-${type}`).className = "sort-btn py-2 rounded-lg accent-soft-bg accent-text border accent-border transition";
-
-            if (type === 'rating') {
-                filteredReviews.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
-            } else if (type === 'safe') {
-                const order = { 'Safe': 1, 'Moderate': 2, 'Strict': 3 };
-                filteredReviews.sort((a, b) => order[a.safetyLevel] - order[b.safetyLevel]);
-            } else if (type === 'random') {
-                filteredReviews.sort(() => Math.random() - 0.5);
-            } else {
-                filteredReviews = [...allReviews];
-            }
+            if (type === 'rating') filteredReviews.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+            else if (type === 'random') filteredReviews.sort(() => Math.random() - 0.5);
+            else filteredReviews = [...allReviews];
             renderHomeGrid();
         }
 
-        function handleSearch(query) {
-            const clearBtn = document.getElementById('clearSearchBtn');
-            const q = query.trim().toLowerCase();
-            if (q.length > 0) {
-                clearBtn.classList.remove('hidden');
-                switchView('home');
-                filteredReviews = allReviews.filter(r => 
-                    r.title.toLowerCase().includes(q) ||
-                    r.industry.toLowerCase().includes(q) ||
-                    r.genres.some(g => g.toLowerCase().includes(q)) ||
-                    r.safetyLevel.toLowerCase().includes(q)
-                );
-                document.getElementById('activeFilterLabel').textContent = `Search results for "${query}"`;
-            } else {
-                clearBtn.classList.add('hidden');
-                filteredReviews = [...allReviews];
-                document.getElementById('activeFilterLabel').textContent = "All titles • no active filters";
-            }
+        function handleSearch(q) {
+            const query = q.trim().toLowerCase();
+            document.getElementById('clearSearchBtn').classList.toggle('hidden', !query);
+            switchView('home');
+            filteredReviews = query 
+                ? allReviews.filter(r => r.title.toLowerCase().includes(query) || r.industry.toLowerCase().includes(query))
+                : [...allReviews];
             renderHomeGrid();
         }
 
@@ -979,73 +1159,37 @@
             ['safety', 'genre', 'lang', 'year'].forEach(t => {
                 document.getElementById(`dfContent-${t}`).classList.add('hidden');
                 document.getElementById(`dfContent-${t}`).classList.remove('flex');
-                document.getElementById(`dfTab-${t}`).className = "py-1.5 rounded-lg text-theme-muted hover:text-white";
+                document.getElementById(`dfTab-${t}`).className = "py-1.5 rounded-lg text-theme-muted";
             });
             document.getElementById(`dfContent-${tab}`).classList.remove('hidden');
             document.getElementById(`dfContent-${tab}`).classList.add('flex');
             document.getElementById(`dfTab-${tab}`).className = "py-1.5 rounded-lg bg-theme-elevated text-white";
         }
 
-        // --- 8. LIGHT / DARK APPEARANCE SWITCHER ---
         function setThemeMode(mode) {
-            const html = document.documentElement;
-            const lightBtn = document.getElementById('lightModeBtn');
-            const darkBtn = document.getElementById('darkModeBtn');
-
-            if (mode === 'light') {
-                html.classList.add('light');
-                html.classList.remove('dark');
-                lightBtn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-200 text-slate-900 transition";
-                darkBtn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-theme-muted transition";
-            } else {
-                html.classList.add('dark');
-                html.classList.remove('light');
-                darkBtn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-theme-elevated text-white transition";
-                lightBtn.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-theme-muted transition";
-            }
+            document.documentElement.className = mode;
             localStorage.setItem('cineguide_theme_mode', mode);
         }
 
-        // --- 9. USER PROFILE & CLOUD SYNC LOGIN SIMULATION ---
         function openAuthModal() {
             toggleMenu(false);
-            const modal = document.getElementById('authModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('authModal').classList.add('flex');
         }
 
         function closeAuthModal() {
-            const modal = document.getElementById('authModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('authModal').classList.remove('flex');
         }
 
-        function handleProfileClick() {
-            if (currentUser) {
-                switchView('watchlist');
-            } else {
-                openAuthModal();
-            }
-        }
-
-        function handleAuthAction() {
-            if (currentUser) {
-                if (confirm("Log out from Cloud Sync? Your local watchlist will still remain on this device.")) {
-                    currentUser = null;
-                    localStorage.removeItem('cineguide_user');
-                    updateUserUI();
-                }
-            } else {
-                openAuthModal();
-            }
-        }
+        function handleProfileClick() { openAuthModal(); }
+        function handleAuthAction() { openAuthModal(); }
 
         function handleSimpleSyncLogin(e) {
             e.preventDefault();
             const name = document.getElementById('authNameInput').value.trim();
             const email = document.getElementById('authEmailInput').value.trim();
             const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
             currentUser = { name, email, initials };
             localStorage.setItem('cineguide_user', JSON.stringify(currentUser));
             updateUserUI();
@@ -1057,22 +1201,7 @@
                 document.getElementById('userInitials').textContent = currentUser.initials;
                 document.getElementById('drawerUserInitials').textContent = currentUser.initials;
                 document.getElementById('drawerUserName').textContent = currentUser.name;
-                document.getElementById('drawerManageText').textContent = "Manage account • Cloud Synced";
-                document.getElementById('onlineStatusDot').classList.remove('hidden');
-                document.getElementById('syncModeBadge').innerHTML = `<i data-lucide="cloud-check" class="w-3.5 h-3.5 text-emerald-400"></i> Synced as ${currentUser.name}`;
-            } else {
-                document.getElementById('userInitials').textContent = "G";
-                document.getElementById('drawerUserInitials').textContent = "G";
-                document.getElementById('drawerUserName').textContent = "Guest User";
-                document.getElementById('drawerManageText').textContent = "Sign in for Cloud Sync";
-                document.getElementById('onlineStatusDot').classList.add('hidden');
-                document.getElementById('syncModeBadge').innerHTML = `<i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Saved Locally`;
             }
-            lucide.createIcons();
-        }
-
-        function showParentalGuideInfo() {
-            alert("Our Parental Guide checks 5 categories before you watch:\n1. Sex & Nudity\n2. Violence & Gore\n3. Profanity\n4. Drugs & Alcohol\n5. Frightening Scenes\n\nGreen = Family Safe | Yellow = Teen Caution | Red = 18+ Strict.");
         }
     </script>
 </body>
