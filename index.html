@@ -299,24 +299,11 @@
                 <p class="text-xs text-theme-muted mt-0.5">Newest first</p>
             </div>
 
-            <!-- 2x2 STATS COUNTER BOX -->
-            <div class="p-4 rounded-2xl bg-theme-card border border-theme grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-                <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-muted">FAMILY SAFE</span>
-                    <p id="statSafe" class="text-2xl font-extrabold mt-0.5">0</p>
-                </div>
-                <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-muted">PG-13 CAUTION</span>
-                    <p id="statModerate" class="text-2xl font-extrabold mt-0.5">0</p>
-                </div>
-                <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-muted">18+ STRICT</span>
-                    <p id="statStrict" class="text-2xl font-extrabold mt-0.5">0</p>
-                </div>
-                <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider accent-text">COMBINED REVIEWS</span>
-                    <p id="statTotal" class="text-2xl font-extrabold accent-text mt-0.5">0</p>
-                </div>
+            <!-- FAMILY ADVISORY MESSAGE BOX (Replaces the 4 stats options as requested) -->
+            <div class="p-6 rounded-2xl bg-theme-card border border-theme mb-5 text-center flex items-center justify-center shadow-lg">
+                <p class="text-lg sm:text-xl font-extrabold leading-relaxed tracking-wide accent-text">
+                    Before watching, find out if it's suitable for watching with your family!
+                </p>
             </div>
 
             <!-- SORTING BAR -->
@@ -363,12 +350,12 @@
             <div id="watchlistGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
         </section>
 
-        <!-- 3. POST DETAIL VIEW (Matches Screenshots 1000058677 & 1000058676 + Video 1000058678) -->
+        <!-- 3. POST DETAIL VIEW -->
         <section id="detailView" class="hidden pb-12">
             <div id="detailContent"></div>
         </section>
 
-        <!-- 4. ACTOR PROFILE & FILMOGRAPHY VIEW (Matches Video 0:13 - 0:27) -->
+        <!-- 4. ACTOR PROFILE & FILMOGRAPHY VIEW -->
         <section id="actorView" class="hidden px-4 py-6 pb-16">
             <div id="actorContent"></div>
         </section>
@@ -393,7 +380,7 @@
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        // --- 1. ACTORS DATABASE (With Bio & Complete Filmography) ---
+        // --- 1. ACTORS DATABASE ---
         const actorsDB = {
             "omar-sy": {
                 id: "omar-sy",
@@ -623,17 +610,9 @@
             const customAdminReviews = JSON.parse(localStorage.getItem('cineguide_custom_reviews') || '[]');
             allReviews = [...customAdminReviews, ...defaultReviews];
             filteredReviews = [...allReviews];
-            updateStatsBox();
         }
 
-        function updateStatsBox() {
-            document.getElementById('statSafe').textContent = allReviews.filter(r => r.safetyLevel === 'Safe').length;
-            document.getElementById('statModerate').textContent = allReviews.filter(r => r.safetyLevel === 'Moderate').length;
-            document.getElementById('statStrict').textContent = allReviews.filter(r => r.safetyLevel === 'Strict').length;
-            document.getElementById('statTotal').textContent = allReviews.length + " Titles";
-        }
-
-        // --- 5. HOME CARDS RENDER (Matches Olamovies Home Cards) ---
+        // --- 5. HOME CARDS RENDER ---
         function renderHomeGrid() {
             const grid = document.getElementById('moviesGrid');
             if (filteredReviews.length === 0) {
@@ -682,7 +661,7 @@
             </article>`;
         }
 
-        // --- 6. POST DETAIL VIEW (Exact Match to Screenshots 1000058677, 1000058676 & Video 1000058678) ---
+        // --- 6. POST DETAIL VIEW ---
         function openDetailView(id) {
             const item = allReviews.find(r => r.id === id);
             if (!item) return;
@@ -708,18 +687,16 @@
             const isWatched = watchedIds.includes(item.id);
             const stills = item.stills && item.stills.length ? item.stills : [item.backdrop];
             const currentIndexInAll = allReviews.findIndex(r => r.id === item.id) + 1;
-
-            // Keep Binging (Related Recommendations)
             const relatedItems = allReviews.filter(r => r.id !== item.id);
 
             const container = document.getElementById('detailContent');
             container.innerHTML = `
-                <!-- TOP HERO IMAGE SLIDER (Matches Screenshot 1 & 2) -->
+                <!-- TOP HERO IMAGE SLIDER -->
                 <div class="relative w-full h-[340px] sm:h-[420px] bg-black overflow-hidden">
                     <img id="detailHeroImg" src="${stills[currentStillIndex]}" class="w-full h-full object-cover opacity-85 transition duration-500">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#090a0f] via-[#090a0f]/40 to-transparent"></div>
 
-                    <!-- Top Left Counter Pill (e.g., 5 / 30 II) -->
+                    <!-- Top Left Counter Pill -->
                     <div class="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-3 text-xs font-bold text-white">
                         <span id="detailSlideCounter">${currentIndexInAll} / ${allReviews.length}</span>
                         <span class="opacity-70">||</span>
@@ -742,13 +719,12 @@
                     </div>
                 </div>
 
-                <!-- MAIN INFO BLOCK (Poster Left + Meta Pills Right - Matches Screenshot) -->
+                <!-- MAIN INFO BLOCK -->
                 <div class="px-4 pt-2">
                     <div class="flex gap-4 items-start mb-6">
-                        <!-- Left Poster with Floating Icons -->
+                        <!-- Left Poster -->
                         <div class="relative w-32 sm:w-40 shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                             <img src="${item.poster}" alt="${item.title}" class="w-full h-48 sm:h-56 object-cover">
-                            <!-- Floating Chat/Review Counter Icon -->
                             <div class="absolute bottom-2 left-2 w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center shadow-lg">
                                 <i data-lucide="message-square" class="w-5 h-5"></i>
                                 <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-bold rounded-full">5</span>
@@ -777,9 +753,8 @@
                         </div>
                     </div>
 
-                    <!-- ACTION BUTTONS STACK (Matches Red Bar + Trailer/IMDb + Watchlist/Watched) -->
+                    <!-- ACTION BUTTONS STACK -->
                     <div class="space-y-2.5 mb-8">
-                        <!-- Big Coral/Red Primary Action Button (Scrolls to Parental Guide instead of pirated download) -->
                         <button onclick="document.getElementById('parentalSection').scrollIntoView({behavior: 'smooth'})" class="w-full py-3.5 px-5 rounded-2xl bg-[#e0533c] hover:bg-[#d04630] text-white font-bold flex items-center justify-between shadow-lg transition">
                             <span class="flex items-center gap-2.5 text-sm sm:text-base">
                                 <i data-lucide="shield-check" class="w-5 h-5"></i> Parental Guide & Safety Verdict
@@ -821,7 +796,7 @@
                         </div>
                     </div>
 
-                    <!-- EPISODES SECTION (If TV Series / Anime - Matches Video 0:04 - 0:10) -->
+                    <!-- EPISODES SECTION -->
                     ${item.episodes && item.episodes.length > 0 ? `
                     <div class="mb-8">
                         <h2 class="text-lg font-extrabold mb-3">Episodes</h2>
@@ -850,7 +825,7 @@
                     </div>
                     ` : ''}
 
-                    <!-- ACTORS / CAST SECTION (Matches Video 0:01 - 0:13 + Circular Avatars) -->
+                    <!-- ACTORS / CAST SECTION -->
                     <div class="mb-8">
                         <div class="flex items-center justify-between mb-3">
                             <h2 class="text-lg font-extrabold">Actors & Cast</h2>
@@ -870,7 +845,7 @@
                             `).join('')}
                         </div>
 
-                        <!-- Portrait Actor Cards (Exact match to Video 0:01) -->
+                        <!-- Portrait Actor Cards -->
                         <div class="flex gap-3.5 overflow-x-auto no-scrollbar pb-2">
                             ${item.cast.map(c => `
                                 <div onclick="openActorProfile('${c.actorId}')" class="w-36 sm:w-40 shrink-0 cursor-pointer group">
@@ -916,7 +891,7 @@
                         </div>
                     </div>
 
-                    <!-- KEEP BINGING SECTION (Matches Video 0:11) -->
+                    <!-- KEEP BINGING SECTION -->
                     <div>
                         <h2 class="text-lg font-extrabold mb-3">Keep Binging</h2>
                         <div class="grid grid-cols-2 gap-3.5">
@@ -945,7 +920,7 @@
             box.classList.toggle('hidden');
         }
 
-        // --- 7. ACTOR BIO & FILMOGRAPHY VIEW (Exact Match to Video 0:13 - 0:27) ---
+        // --- 7. ACTOR BIO & FILMOGRAPHY VIEW ---
         let currentActorObj = null;
         let currentActorTab = 'movies';
 
@@ -978,7 +953,7 @@
                     <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Title
                 </button>
 
-                <!-- Centered Portrait & Bio (Matches Video 0:13) -->
+                <!-- Centered Portrait & Bio -->
                 <div class="max-w-md mx-auto text-center mb-8">
                     <div class="w-44 h-56 mx-auto rounded-3xl overflow-hidden border border-white/15 shadow-2xl mb-4 bg-theme-card">
                         <img src="${actor.photo}" alt="${actor.name}" class="w-full h-full object-cover">
@@ -991,7 +966,7 @@
                     <button onclick="document.getElementById('actorBioText').classList.toggle('line-clamp-4')" class="text-xs font-bold text-white mt-2 hover:underline">Read more</button>
                 </div>
 
-                <!-- Movies / Series Count Tabs (Matches Video 0:16) -->
+                <!-- Movies / Series Count Tabs -->
                 <div class="border-b border-theme flex items-center gap-6 mb-5">
                     <button onclick="switchActorTab('movies')" class="pb-2.5 border-b-2 ${currentActorTab === 'movies' ? 'border-white text-white font-extrabold' : 'border-transparent text-theme-muted font-medium'} text-sm flex items-center gap-1.5">
                         <span>Movies</span>
@@ -1003,7 +978,7 @@
                     </button>
                 </div>
 
-                <!-- 2-Column Filmography Poster Grid (Matches Video 0:17 - 0:27) -->
+                <!-- 2-Column Filmography Poster Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     ${list.map(work => `
                         <div onclick="${work.linkedReviewId ? `openDetailView('${work.linkedReviewId}')` : `alert('Review for ${work.title} can be published from Admin Panel!')`}" class="cursor-pointer group">
