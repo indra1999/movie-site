@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CineSafe Guide — Movies, Web Series & Anime Reviews</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      overflow-x: hidden;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
+    
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .poster-aspect { aspect-ratio: 2 / 3; }
+    .video-aspect { aspect-ratio: 16 / 9; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#0b0f19] text-gray-100 selection:bg-red-600 selection:text-white">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-40 bg-[#0b0f19]/95 backdrop-blur-md border-b border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 py-3">
+      <div class="flex items-center justify-between gap-3">
+        <!-- Logo -->
+        <a href="#home" onclick="navigateTo('home'); return false;" class="flex items-center gap-2.5 shrink-0">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center shadow-lg shadow-red-600/20">
+            <i class="fa-solid fa-film text-white text-lg"></i>
+          </div>
+          <div>
+            <span class="font-extrabold text-lg tracking-tight text-white">CINESAFE</span>
+            <span class="ml-1 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Guide</span>
+          </div>
+        </a>
+
+        <!-- Desktop Search Bar -->
+        <div class="hidden md:flex relative flex-1 max-w-md mx-4">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+          <input 
+            type="text" 
+            id="desktopSearchInput"
+            placeholder="Search movies, web series, anime, genres..." 
+            class="w-full bg-gray-900 border border-gray-700 focus:border-red-500 rounded-full pl-10 pr-9 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500"
+            oninput="handleSearch(this.value)"
+          />
+          <button id="desktopClearBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="navigateTo('home')" id="navHomeBtn" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-200 transition">
+            <i class="fa-solid fa-house"></i> Home
+          </button>
+          <button onclick="navigateTo('generator')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/25 transition">
+            <i class="fa-solid fa-plus"></i> <span>Post Tool</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Full-Width Search Bar (Fixed Visibility & Clear Text) -->
+      <div id="mobileSearchContainer" class="mt-3 md:hidden relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+        <input 
+          type="text" 
+          id="mobileSearchInput"
+          placeholder="Search movies, series, anime..." 
+          class="w-full bg-[#131b2e] border border-gray-700 focus:border-red-500 rounded-xl pl-10 pr-10 py-2.5 text-base text-white placeholder-gray-400 focus:outline-none"
+          oninput="handleSearch(this.value)"
+        />
+        <button id="mobileClearBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-circle-xmark text-base"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       VIEW 1: HOME PAGE (BROWSE & FILTERS)
+       ========================================== -->
+  <main id="homeView" class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+    
+    <!-- Hero Banner -->
+    <div class="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#111827] via-[#1e1b4b] to-[#111827] border border-gray-800 p-5 sm:p-8 mb-6 shadow-xl">
+      <div class="max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold mb-3">
+          <i class="fa-solid fa-shield-heart"></i> Movies, Web Series & Anime — With Parental Guide
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight mb-3">
+          Know Before You Watch With <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-400">Your Family!</span>
+        </h1>
+        <p class="text-gray-300 text-xs sm:text-sm leading-relaxed mb-5">
+          Spoiler-free reviews, season & episode guides, OTT platform availability, official TMDB posters, trailers, and accurate Parental Content Ratings.
+        </p>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 max-w-md bg-gray-900/80 border border-gray-800 rounded-xl p-3 text-center">
+          <div>
+            <div id="statTotal" class="text-lg sm:text-xl font-extrabold text-white">0</div>
+            <div class="text-[11px] text-gray-400">Total Reviews</div>
+          </div>
+          <div class="border-x border-gray-800">
+            <div id="statSeries" class="text-lg sm:text-xl font-extrabold text-amber-400">0</div>
+            <div class="text-[11px] text-gray-400">Series & Anime</div>
+          </div>
+          <div>
+            <div id="statSafe" class="text-lg sm:text-xl font-extrabold text-emerald-400">0</div>
+            <div class="text-[11px] text-gray-400">Family Safe</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category & Parental Filter Bar -->
+    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-3.5 sm:p-4 mb-6 space-y-3">
+      <!-- Media Type Tabs -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+        <button onclick="setCategory('all')" data-cat="all" class="cat-btn shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition">
+          <i class="fa-solid fa-layer-group mr-1"></i> All Content
+        </button>
+        <button onclick="setCategory('Movie')" data-cat="Movie" class="cat-btn shrink-0 px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 text-gray-300 hover:bg-gray-700 transition">
+          <i class="fa-solid fa-clapperboard mr-1"></i> Movies
+        </button>
+        <button onclick="setCategory('Web Series')" data-cat="Web Series" class="cat-btn shrink-0 px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 text-gray-300 hover:bg-gray-700 transition">
+          <i class="fa-solid fa-tv mr-1"></i> Web Series
+        </button>
+        <button onclick="setCategory('Anime')" data-cat="Anime" class="cat-btn shrink-0 px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 text-gray-300 hover:bg-gray-700 transition">
+          <i class="fa-solid fa-dragon mr-1"></i> Anime
+        </button>
+      </div>
+
+      <!-- Secondary Dropdown Filters -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-gray-800/80">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+            <i class="fa-solid fa-shield-halved"></i> Safety Filter:
+          </span>
+          <select id="safetyFilter" onchange="renderGrid()" class="bg-gray-900 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-red-500">
+            <option value="all">All Ratings</option>
+            <option value="Safe">✅ Family Safe Only</option>
+            <option value="Caution">⚠️ Caution (13+ / 16+)</option>
+            <option value="Adults">🔞 Adults Only (18+)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400">Sort by:</span>
+          <select id="sortFilter" onchange="renderGrid()" class="bg-gray-900 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-red-500">
+            <option value="newest">Recently Added</option>
+            <option value="rating">Highest Rated</option>
+            <option value="year">Release Year</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Title & Count -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base sm:text-xl font-bold text-white flex items-center gap-2">
+        <span class="w-1.5 h-5 bg-red-600 rounded-full"></span>
+        Latest Reviews & Parental Guides
+      </h2>
+      <span id="resultCount" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-800 text-gray-300">0 items</span>
+    </div>
+
+    <!-- Content Grid -->
+    <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5"></div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden text-center py-16 bg-[#111827] rounded-2xl border border-gray-800">
+      <i class="fa-solid fa-film text-4xl text-gray-600 mb-3"></i>
+      <h3 class="text-lg font-bold text-white mb-1">No matching titles found</h3>
+      <p class="text-xs text-gray-400 mb-4">Try clearing your search query or switching the filter options.</p>
+      <button onclick="resetFilters()" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold">
+        Reset All Filters
+      </button>
+    </div>
+
+  </main>
+
+  <!-- ==========================================
+       VIEW 2: DEDICATED FULL-PAGE POST DETAILS
+       ========================================== -->
+  <section id="detailView" class="hidden flex-1 w-full pb-16">
+    <!-- Dynamic details injected by JS -->
+  </section>
+
+  <!-- ==========================================
+       VIEW 3: FULL-PAGE ADMIN / POST GENERATOR
+       ========================================== -->
+  <section id="generatorView" class="hidden flex-1 max-w-4xl w-full mx-auto px-4 py-6">
+    <div class="mb-5 flex items-center justify-between">
+      <button onclick="navigateTo('home')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs sm:text-sm font-semibold transition">
+        <i class="fa-solid fa-arrow-left"></i> Back to Home
+      </button>
+      <span class="text-xs font-bold uppercase px-3 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+        TMDB Auto-Fetch & JSON Tool
+      </span>
+    </div>
+
+    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-extrabold text-white">Add New Review & Parental Guide</h1>
+        <p class="text-xs sm:text-sm text-gray-400 mt-1">Fetch official posters, trailers, seasons & info automatically from TMDB API or fill manually.</p>
+      </div>
+
+      <!-- STEP 1: TMDB Auto-Fetcher -->
+      <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs sm:text-sm font-bold text-amber-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-bolt"></i> Step 1: Auto-Fetch from TMDB API (Optional)
+          </h3>
+          <a href="https://www.themoviedb.org/settings/api" target="_blank" class="text-[11px] text-blue-400 hover:underline">
+            Get Free TMDB Key <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+
+        <input 
+          type="text" 
+          id="tmdbApiKey" 
+          placeholder="Paste your TMDB API Key (v3 auth) here..." 
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-400"
+        />
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input 
+            type="text" 
+            id="tmdbSearchQuery" 
+            placeholder="Enter Movie, Web Series or Anime title (e.g., Severance, Re:Zero)..." 
+            class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-400"
+          />
+          <button onclick="searchTMDB()" class="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs sm:text-sm shrink-0 transition">
+            <i class="fa-solid fa-magnifying-glass mr-1"></i> Search TMDB
+          </button>
+        </div>
+
+        <!-- TMDB Search Results Container -->
+        <div id="tmdbResults" class="hidden space-y-2 pt-2 max-h-60 overflow-y-auto"></div>
+
+        <!-- Quick Demo Presets -->
+        <div class="pt-2 border-t border-gray-800/80">
+          <span class="text-[11px] text-gray-400 block mb-2">1-Click Demo Auto-Fill (No API Key Needed):</span>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="fillPreset('stranger')" class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700">
+              📺 Stranger Things (Series)
+            </button>
+            <button type="button" onclick="fillPreset('aot')" class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700">
+              ⚔️ Attack on Titan (Anime)
+            </button>
+            <button type="button" onclick="fillPreset('dune')" class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700">
+              🎬 Dune: Part Two (Movie)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Details Form -->
+      <form id="postForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Category (Media Type) *</label>
+            <select id="formType" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white">
+              <option value="Movie">🎬 Movie</option>
+              <option value="Web Series">📺 Web Series</option>
+              <option value="Anime">🐉 Anime</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Title *</label>
+            <input type="text" id="formTitle" required placeholder="e.g., Severance / Demon Slayer" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Release Year *</label>
+            <input type="number" id="formYear" required placeholder="2025" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Seasons / Runtime *</label>
+            <input type="text" id="formDuration" required placeholder="2 Seasons • 18 Eps" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">OTT Platform</label>
+            <input type="text" id="formPlatform" placeholder="Netflix / Prime / Crunchyroll" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Audio / Language</label>
+            <input type="text" id="formAudio" placeholder="English / Japanese / Hindi" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-1">
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Our Rating (Out of 10) *</label>
+            <input type="number" step="0.1" max="10" min="1" id="formRating" required placeholder="8.8" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Genres (Comma separated) *</label>
+            <input type="text" id="formGenres" required placeholder="Sci-Fi, Thriller, Mystery" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">TMDB Poster Image URL *</label>
+            <input type="url" id="formPoster" required placeholder="https://image.tmdb.org/t/p/w500/..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">TMDB Backdrop Banner URL</label>
+            <input type="url" id="formBackdrop" placeholder="https://image.tmdb.org/t/p/original/..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">YouTube Trailer URL or ID</label>
+            <input type="text" id="formTrailer" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+
+        <!-- Parental Guide Section -->
+        <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-4 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">
+            <i class="fa-solid fa-shield-heart mr-1"></i> Parental Guide Settings
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-[11px] text-gray-400 mb-1">Overall Status</label>
+              <select id="formSafety" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white">
+                <option value="Safe">✅ Family Safe</option>
+                <option value="Caution">⚠️ Caution (13+/16+)</option>
+                <option value="Adults">🔞 Strictly 18+</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-gray-400 mb-1">Age Rating</label>
+              <input type="text" id="formAge" placeholder="13+ / 16+ / All Ages" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-gray-400 mb-1">Sex & Nudity</label>
+              <select id="formNudity" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white">
+                <option value="None">None</option>
+                <option value="Mild">Mild</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Severe">Severe</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-gray-400 mb-1">Violence & Gore</label>
+              <select id="formViolence" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white">
+                <option value="None">None</option>
+                <option value="Mild">Mild</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Severe">Severe</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-[11px] text-gray-400 mb-1">Profanity / Language</label>
+              <select id="formProfanity" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-white">
+                <option value="None">None</option>
+                <option value="Mild">Mild</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Severe">Severe</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] text-gray-400 mb-1">Parental Advisory Note (Specific episode/scene warnings)</label>
+              <input type="text" id="formParentalNote" required placeholder="e.g., Safe for families. No explicit scenes, mild action violence only." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Full Review & Story Summary *</label>
+          <textarea id="formReview" rows="4" required placeholder="Write your spoiler-free review and thoughts here..." class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm text-white"></textarea>
+        </div>
+
+        <div class="flex flex-wrap gap-3 pt-2">
+          <button type="submit" class="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-600/30 transition">
+            <i class="fa-solid fa-plus-circle mr-1"></i> Publish to Live Preview & Generate JSON
+          </button>
+        </div>
+      </form>
+
+      <!-- Generated JSON Output for GitHub -->
+      <div id="jsonOutputBox" class="hidden bg-[#0b0f19] border border-emerald-500/40 rounded-xl p-4 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-emerald-400">✅ Added to Website! Copy JSON below for your GitHub file:</span>
+          <button onclick="copyJSON()" class="text-xs px-3 py-1 rounded bg-gray-800 hover:bg-gray-700 text-white">
+            <i class="fa-regular fa-copy mr-1"></i> Copy Code
+          </button>
+        </div>
+        <pre id="jsonCode" class="text-[11px] text-gray-300 overflow-x-auto bg-gray-950 p-3 rounded-lg border border-gray-800"></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-gray-800/80 bg-[#080b12] py-6 mt-12">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-white">CINESAFE GUIDE</span> — Family-Friendly Movie, Series & Anime Reviews.
+      </div>
+      <div>
+        Powered by GitHub Pages & TMDB API
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       JAVASCRIPT LOGIC & INITIAL DATABASE
+       ========================================== -->
+  <script>
+    const mediaItems = [
+      {
+        id: "1",
+        title: "Severance",
+        type: "Web Series",
+        year: 2022,
+        duration: "2 Seasons • 19 Eps",
+        platform: "Apple TV+",
+        audio: "English",
+        rating: 9.3,
+        genres: ["Sci-Fi", "Mystery", "Psychological Thriller"],
+        poster: "https://image.tmdb.org/t/p/w500/p6LLXfd3sC4tSw9X2X9dD8S0F58.jpg",
+        backdrop: "https://image.tmdb.org/t/p/original/84XPpjGvxNyExjSuLQe0SzioErt.jpg",
+        gallery: [
+          "https://image.tmdb.org/t/p/w500/p6LLXfd3sC4tSw9X2X9dD8S0F58.jpg",
+          "https://image.tmdb.org/t/p/original/84XPpjGvxNyExjSuLQe0SzioErt.jpg"
+        ],
+        trailerKey: "xEQP4VVuyrY",
+        safety: "Caution",
+        ageRating: "16+",
+        nudity: "None",
+        violence: "Mild",
+        profanity: "Moderate",
+        parentalNote: "No nudity or explicit sexual content. Contains strong workplace psychological tension, some disturbing imagery, and frequent strong language.",
+        review: "One of the finest sci-fi mystery thrillers of the decade. Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives. Outstanding cinematography, brilliant pacing, and zero unnecessary explicit filler make it a must-watch for mature viewers."
+      },
+      {
+        id: "2",
+        title: "Spy x Family",
+        type: "Anime",
+        year: 2022,
+        duration: "2 Seasons • 37 Eps",
+        platform: "Crunchyroll / Netflix",
+        audio: "Japanese / English / Hindi",
+        rating: 8.7,
+        genres: ["Action", "Comedy", "Slice of Life"],
+        poster: "https://image.tmdb.org/t/p/w500/3r4LYFuXrg3G8fepysr4xSLWnQL.jpg",
+        backdrop: "https://image.tmdb.org/t/p/original/zNugnnR5KEmq9EzLcl0Me1UmHYk.jpg",
+        gallery: [
+          "https://image.tmdb.org/t/p/w500/3r4LYFuXrg3G8fepysr4xSLWnQL.jpg",
+          "https://image.tmdb.org/t/p/original/zNugnnR5KEmq9EzLcl0Me1UmHYk.jpg"
+        ],
+        trailerKey: "ofXigq9aIpo",
+        safety: "Safe",
+        ageRating: "All Ages (10+)",
+        nudity: "None",
+        violence: "Mild",
+        profanity: "None",
+        parentalNote: "100% Family Friendly! Wholesome comedy with cartoonish spy action. Zero nudity or fan-service.",
+        review: "A master spy has to build a fake family to execute a mission, not realizing that the girl he adopts is a telepath and the woman he agrees to be in a marriage with is a skilled assassin. Hilarious, heartwarming, and completely safe to watch with everyone at home."
+      },
+      {
+        id: "3",
+        title: "Panchayat",
+        type: "Web Series",
+        year: 2020,
+        duration: "3 Seasons • 24 Eps",
+        platform: "Prime Video",
+        audio: "Hindi",
+        rating: 9.0,
+        genres: ["Comedy", "Drama"],
+        poster: "https://image.tmdb.org/t/p/w500/bX6F0kU8W3yB3W8kO3jG2R7u7C.jpg",
+        backdrop: "https://image.tmdb.org/t/p/original/Ab8mkHmkYADjU7wQiOkia9BzGvS.jpg",
+        gallery: [
+          "https://image.tmdb.org/t/p/w500/bX6F0kU8W3yB3W8kO3jG2R7u7C.jpg"
+        ],
+        trailerKey: "mojZJ7oeD_g",
+        safety: "Safe",
+        ageRating: "All Ages",
+        nudity: "None",
+        violence: "Mild",
+        profanity: "Mild",
+        parentalNote: "Clean rural drama and comedy. Completely safe to watch with parents and family. Season 3 has minor political scuffles.",
+        review: "An engineering graduate, unable to find a better job option, joins as secretary of a Panchayat office in a remote village of Uttar Pradesh. Heartfelt storytelling, realistic characters, and pure entertainment without any vulgarity."
+      },
+      {
+        id: "4",
+        title: "Dune: Part Two",
+        type: "Movie",
+        year: 2024,
+        duration: "2h 46m",
+        platform: "JioCinema / Max",
+        audio: "English / Hindi",
+        rating: 8.9,
+        genres: ["Sci-Fi", "Adventure", "Action"],
+        poster: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
+        backdrop: "https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg",
+        gallery: [
+          "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
+          "https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg"
+        ],
+        trailerKey: "Way9Dexny3w",
+        safety: "Safe",
+        ageRating: "13+",
+        nudity: "None",
+        violence: "Moderate",
+        profanity: "None",
+        parentalNote: "Zero nudity or sexual scenes. Contains sci-fi sword combat, war sequences, and intense desert action.",
+        review: "Paul Atreides unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family. A visual and auditory masterpiece that is completely clean of explicit content."
+      },
+      {
+        id: "5",
+        title: "Re:Zero − Starting Life in Another World",
+        type: "Anime",
+        year: 2016,
+        duration: "3 Seasons • 66 Eps",
+        platform: "Crunchyroll",
+        audio: "Japanese / English",
+        rating: 8.6,
+        genres: ["Fantasy", "Psychological", "Thriller"],
+        poster: "https://image.tmdb.org/t/p/w500/aN6TWkR2uF6N1FPp2PfA7rR0bU8.jpg",
+        backdrop: "https://image.tmdb.org/t/p/original/6UH52Fmau8RPsMAbQbjwN3wJSCj.jpg",
+        gallery: [
+          "https://image.tmdb.org/t/p/w500/aN6TWkR2uF6N1FPp2PfA7rR0bU8.jpg",
+          "https://image.tmdb.org/t/p/original/6UH52Fmau8RPsMAbQbjwN3wJSCj.jpg"
+        ],
+        trailerKey: "Slz_rahWp6Y",
+        safety: "Caution",
+        ageRating: "16+",
+        nudity: "Mild",
+        violence: "Severe",
+        profanity: "Mild",
+        parentalNote: "Contains intense animated blood, dark psychological trauma, and character deaths. Not suitable for young kids.",
+        review: "Subaru Natsuki is suddenly summoned to another world and discovers he has the ability to 'Return by Death', reversing time whenever he dies. An emotional, gripping dark-fantasy masterclass."
+      },
+      {
+        id: "6",
+        title: "The Wild Robot",
+        type: "Movie",
+        year: 2024,
+        duration: "1h 42m",
+        platform: "Prime Video / Apple TV",
+        audio: "English / Hindi",
+        rating: 8.6,
+        genres: ["Animation", "Family", "Sci-Fi"],
+        poster: "https://image.tmdb.org/t/p/w500/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg",
+        backdrop: "https://image.tmdb.org/t/p/original/417tYZ4XUyJrtyZXj7HpvWf1E8f.jpg",
+        gallery: [
+          "https://image.tmdb.org/t/p/w500/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg",
+          "https://image.tmdb.org/t/p/original/417tYZ4XUyJrtyZXj7HpvWf1E8f.jpg"
+        ],
+        trailerKey: "67vbA5ZJdKQ",
+        safety: "Safe",
+        ageRating: "All Ages",
+        nudity: "None",
+        violence: "None",
+        profanity: "None",
+        parentalNote: "100% Pure Family Masterpiece. Great moral lessons for kids and adults alike.",
+        review: "After a shipwreck, an intelligent robot called Roz is stranded on an uninhabited island. To survive the harsh environment, Roz bonds with the island's animals and cares for an orphaned baby goose."
+      }
+    ];
+
+    let activeCategory = 'all';
+    let searchQuery = '';
+
+    // Helper for Safety Badge Color
+    function getSafetyBadge(safety) {
+      if (safety === 'Safe') {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/90 text-black shadow"><i class="fa-solid fa-check-circle"></i> Family Safe</span>`;
+      } else if (safety === 'Caution') {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400/95 text-black shadow"><i class="fa-solid fa-triangle-exclamation"></i> Caution</span>`;
+      }
+      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-600 text-white shadow"><i class="fa-solid fa-ban"></i> 18+ Only</span>`;
+    }
+
+    // Helper for Type Badge
+    function getTypeBadge(type) {
+      if (type === 'Web Series') return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">SERIES</span>`;
+      if (type === 'Anime') return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-600 text-white">ANIME</span>`;
+      return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">MOVIE</span>`;
+    }
+
+    // Render Home Grid
+    function renderGrid() {
+      const grid = document.getElementById('mediaGrid');
+      const emptyState = document.getElementById('emptyState');
+      const safetyVal = document.getElementById('safetyFilter').value;
+      const sortVal = document.getElementById('sortFilter').value;
+
+      // Update Quick Stats
+      document.getElementById('statTotal').textContent = mediaItems.length;
+      document.getElementById('statSeries').textContent = mediaItems.filter(i => i.type !== 'Movie').length;
+      document.getElementById('statSafe').textContent = mediaItems.filter(i => i.safety === 'Safe').length;
+
+      let filtered = mediaItems.filter(item => {
+        const matchesCat = activeCategory === 'all' || item.type === activeCategory;
+        const matchesSafety = safetyVal === 'all' || item.safety === safetyVal;
+        const q = searchQuery.toLowerCase().trim();
+        const matchesSearch = !q || 
+          item.title.toLowerCase().includes(q) || 
+          item.genres.join(' ').toLowerCase().includes(q) ||
+          (item.platform && item.platform.toLowerCase().includes(q));
+        return matchesCat && matchesSafety && matchesSearch;
+      });
+
+      if (sortVal === 'rating') filtered.sort((a, b) => b.rating - a.rating);
+      if (sortVal === 'year') filtered.sort((a, b) => b.year - a.year);
+
+      document.getElementById('resultCount').textContent = `${filtered.length} Titles`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      grid.innerHTML = filtered.map(item => `
+        <article 
+          onclick="openPostPage('${item.id}')" 
+          class="group cursor-pointer bg-[#111827] border border-gray-800 hover:border-red-500/60 rounded-2xl overflow-hidden flex flex-col transition duration-200 hover:-translate-y-1 shadow-lg"
+        >
+          <!-- Poster Wrapper -->
+          <div class="relative poster-aspect w-full bg-gray-900 overflow-hidden">
+            <img 
+              src="${item.poster}" 
+              alt="${item.title}" 
+              loading="lazy"
+              onerror="this.src='https://placehold.co/500x750/1f2937/ffffff?text=No+Poster'"
+              class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#111827] via-transparent to-black/40"></div>
+            
+            <!-- Top Badges -->
+            <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1">
+              ${getTypeBadge(item.type)}
+              <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-black/80 text-amber-400 border border-amber-400/30">
+                <i class="fa-solid fa-star text-[10px]"></i> ${item.rating}
+              </span>
+            </div>
+
+            <!-- Bottom Safety Badge on Poster -->
+            <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between">
+              ${getSafetyBadge(item.safety)}
+            </div>
+          </div>
+
+          <!-- Card Info -->
+          <div class="p-3 flex-1 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm text-white group-hover:text-red-400 line-clamp-1 transition">${item.title}</h3>
+              <p class="text-[11px] text-gray-400 mt-0.5">${item.year} • ${item.duration}</p>
+            </div>
+            <div class="mt-2.5 pt-2 border-t border-gray-800/80 flex items-center justify-between text-[11px] text-gray-400">
+              <span class="truncate max-w-[70%]"><i class="fa-solid fa-play-circle text-red-500 mr-1"></i>${item.platform || 'OTT'}</span>
+              <span class="text-red-400 font-semibold">Read <i class="fa-solid fa-arrow-right text-[10px]"></i></span>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    // Handle Search Input Sync (Mobile + Desktop)
+    function handleSearch(val) {
+      searchQuery = val;
+      const dInput = document.getElementById('desktopSearchInput');
+      const mInput = document.getElementById('mobileSearchInput');
+      if (dInput && dInput.value !== val) dInput.value = val;
+      if (mInput && mInput.value !== val) mInput.value = val;
+
+      document.getElementById('desktopClearBtn').classList.toggle('hidden', !val);
+      document.getElementById('mobileClearBtn').classList.toggle('hidden', !val);
+
+      // If user searches while inside a post page, switch back to home view automatically
+      if (document.getElementById('homeView').classList.contains('hidden')) {
+        navigateTo('home', false);
+      }
+      renderGrid();
+    }
+
+    function clearSearch() {
+      handleSearch('');
+    }
+
+    function setCategory(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        if (btn.dataset.cat === cat) {
+          btn.className = "cat-btn shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-red-600 text-white transition";
+        } else {
+          btn.className = "cat-btn shrink-0 px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 text-gray-300 hover:bg-gray-700 transition";
+        }
+      });
+      renderGrid();
+    }
+
+    function resetFilters() {
+      clearSearch();
+      document.getElementById('safetyFilter').value = 'all';
+      document.getElementById('sortFilter').value = 'newest';
+      setCategory('all');
+    }
+
+    // Extract clean YouTube Embed Key
+    function extractYouTubeId(input) {
+      if (!input) return '';
+      const trimmed = input.trim();
+      if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+      const match = trimmed.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+      return match ? match[1] : '';
+    }
+
+    // Color Meter for Severity
+    function getSeverityBar(level) {
+      const map = {
+        'None': { w: 'w-1/4', c: 'bg-emerald-500', t: 'text-emerald-400' },
+        'Mild': { w: 'w-2/4', c: 'bg-yellow-400', t: 'text-yellow-400' },
+        'Moderate': { w: 'w-3/4', c: 'bg-orange-500', t: 'text-orange-400' },
+        'Severe': { w: 'w-full', c: 'bg-red-600', t: 'text-red-400' }
+      };
+      const cur = map[level] || map['None'];
+      return `
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="font-bold ${cur.t}">${level}</span>
+        </div>
+        <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div class="${cur.w} h-full ${cur.c} rounded-full"></div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // FULL-PAGE POST NAVIGATION (NO POPUP MODAL)
+    // ==========================================
+    function openPostPage(id, pushHistory = true) {
+      const item = mediaItems.find(i => i.id === id);
+      if (!item) return;
+
+      const detailView = document.getElementById('detailView');
+      const ytId = extractYouTubeId(item.trailerKey);
+      const galleryImages = item.gallery && item.gallery.length ? item.gallery : [item.poster, item.backdrop].filter(Boolean);
+
+      detailView.innerHTML = `
+        <!-- Top Backdrop Header Banner -->
+        <div class="relative w-full h-56 sm:h-80 md:h-96 bg-gray-900 overflow-hidden">
+          <img 
+            src="${item.backdrop || item.poster}" 
+            alt="${item.title}" 
+            onerror="this.src='${item.poster}'"
+            class="w-full h-full object-cover opacity-35 scale-105 blur-[2px]"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0b0f19] via-[#0b0f19]/60 to-transparent"></div>
+          
+          <!-- Back Navigation Bar inside Page -->
+          <div class="absolute top-4 left-0 right-0 max-w-7xl mx-auto px-4 flex items-center justify-between">
+            <button onclick="navigateTo('home')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-black/70 hover:bg-black text-white text-xs sm:text-sm font-bold border border-gray-700 backdrop-blur-md transition">
+              <i class="fa-solid fa-arrow-left"></i> Back to Browse
+            </button>
+            <a href="#trailerSection" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-red-600/30 transition">
+              <i class="fa-solid fa-play"></i> Watch Trailer
+            </a>
+          </div>
+        </div>
+
+        <!-- Main Post Content Container -->
+        <div class="max-w-7xl mx-auto px-4 -mt-28 sm:-mt-40 relative z-10">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8">
+            
+            <!-- Left Column: High-Res Official TMDB Poster -->
+            <div class="md:col-span-4 lg:col-span-3 flex flex-col items-center md:items-start">
+              <div class="w-56 sm:w-64 md:w-full rounded-2xl overflow-hidden border-2 border-gray-700 shadow-2xl bg-gray-900 poster-aspect">
+                <img 
+                  id="mainPostPoster"
+                  src="${item.poster}" 
+                  alt="${item.title} Official TMDB Poster" 
+                  onerror="this.src='https://placehold.co/500x750/1f2937/ffffff?text=Poster'"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+
+              <!-- Quick Action & Metadata Box -->
+              <div class="w-full mt-4 bg-[#111827] border border-gray-800 rounded-2xl p-4 space-y-2.5 text-xs">
+                <div class="flex justify-between py-1 border-b border-gray-800">
+                  <span class="text-gray-400">Format:</span>
+                  <span class="font-bold text-white">${item.type}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-800">
+                  <span class="text-gray-400">Release Year:</span>
+                  <span class="font-bold text-white">${item.year}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-800">
+                  <span class="text-gray-400">Length / Seasons:</span>
+                  <span class="font-bold text-amber-400">${item.duration}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-800">
+                  <span class="text-gray-400">Where to Watch:</span>
+                  <span class="font-bold text-emerald-400">${item.platform || 'OTT'}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-gray-400">Audio Available:</span>
+                  <span class="font-bold text-white">${item.audio || 'Original'}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Title, Parental Guide, Review, Poster Gallery & Trailer -->
+            <div class="md:col-span-8 lg:col-span-9 space-y-6">
+              
+              <!-- Title & Badges -->
+              <div>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                  ${getTypeBadge(item.type)}
+                  ${getSafetyBadge(item.safety)}
+                  <span class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-gray-800 text-gray-200 border border-gray-700">
+                    Age: ${item.ageRating}
+                  </span>
+                  <span class="px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                    ⭐ ${item.rating} / 10
+                  </span>
+                </div>
+
+                <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">${item.title} (${item.year})</h1>
+                
+                <div class="flex flex-wrap gap-1.5 mt-3">
+                  ${item.genres.map(g => `<span class="text-xs px-3 py-1 rounded-full bg-gray-800/90 text-gray-300 border border-gray-700">${g}</span>`).join('')}
+                </div>
+              </div>
+
+              <!-- PARENTAL GUIDE BOX -->
+              <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
+                  <h2 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-shield-heart text-emerald-400"></i> Complete Parental Guide
+                  </h2>
+                  <span class="text-xs font-semibold text-gray-400">Family Viewing Meter</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div class="bg-[#0b0f19] p-3.5 rounded-xl border border-gray-800/80">
+                    <div class="text-xs text-gray-400 mb-1"><i class="fa-solid fa-heart-crack mr-1"></i> Sex & Nudity</div>
+                    ${getSeverityBar(item.nudity)}
+                  </div>
+                  <div class="bg-[#0b0f19] p-3.5 rounded-xl border border-gray-800/80">
+                    <div class="text-xs text-gray-400 mb-1"><i class="fa-solid fa-burst mr-1"></i> Violence & Gore</div>
+                    ${getSeverityBar(item.violence)}
+                  </div>
+                  <div class="bg-[#0b0f19] p-3.5 rounded-xl border border-gray-800/80">
+                    <div class="text-xs text-gray-400 mb-1"><i class="fa-solid fa-comment-slash mr-1"></i> Profanity / Language</div>
+                    ${getSeverityBar(item.profanity)}
+                  </div>
+                </div>
+
+                <div class="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3.5 text-xs sm:text-sm text-gray-200 leading-relaxed">
+                  <strong class="text-emerald-400 block mb-1"><i class="fa-solid fa-circle-info mr-1"></i> Advisory Note for Families:</strong>
+                  ${item.parentalNote}
+                </div>
+              </div>
+
+              <!-- FULL REVIEW & STORY -->
+              <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-6">
+                <h2 class="text-base sm:text-lg font-extrabold text-white mb-3 flex items-center gap-2">
+                  <i class="fa-solid fa-pen-nib text-red-500"></i> Spoiler-Free Review & Verdict
+                </h2>
+                <p class="text-gray-300 text-sm sm:text-base leading-relaxed whitespace-pre-line">${item.review}</p>
+              </div>
+
+              <!-- TMDB POSTERS & STILLS GALLERY -->
+              <div class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-3">
+                  <h2 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-images text-amber-400"></i> Official TMDB Posters & Stills
+                  </h2>
+                  <span class="text-xs text-gray-400">Tap image to view full size</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  ${galleryImages.map((imgUrl, idx) => `
+                    <a href="${imgUrl}" target="_blank" class="group relative rounded-xl overflow-hidden border border-gray-700 bg-gray-900 block h-44 sm:h-52">
+                      <img src="${imgUrl}" alt="${item.title} Poster ${idx+1}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      <span class="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/80 text-[10px] text-white">
+                        <i class="fa-solid fa-expand mr-1"></i> Full HD
+                      </span>
+                    </a>
+                  `).join('')}
+                </div>
+              </div>
+
+              <!-- WATCH OFFICIAL TRAILER SECTION -->
+              <div id="trailerSection" class="bg-[#111827] border border-gray-800 rounded-2xl p-4 sm:p-6">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                  <h2 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                    <i class="fa-brands fa-youtube text-red-500 text-xl"></i> Official Trailer
+                  </h2>
+                  <a 
+                    href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' ' + item.year + ' official trailer')}" 
+                    target="_blank" 
+                    class="text-xs font-semibold text-red-400 hover:underline flex items-center gap-1"
+                  >
+                    Watch on YouTube App <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                  </a>
+                </div>
+
+                ${ytId ? `
+                  <div class="w-full video-aspect rounded-xl overflow-hidden border border-gray-800 bg-black shadow-lg">
+                    <iframe 
+                      class="w-full h-full"
+                      src="https://www.youtube.com/embed/${ytId}?rel=0" 
+                      title="${item.title} Official Trailer"
+                      frameborder="0" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                      allowfullscreen
+                    ></iframe>
+                  </div>
+                ` : `
+                  <div class="bg-[#0b0f19] border border-gray-800 rounded-xl p-6 text-center">
+                    <p class="text-xs sm:text-sm text-gray-400 mb-3">Direct trailer embed not linked for this title yet.</p>
+                    <a 
+                      href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' ' + item.year + ' official trailer')}" 
+                      target="_blank"
+                      class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-bold transition"
+                    >
+                      <i class="fa-brands fa-youtube"></i> Search & Watch Trailer on YouTube
+                    </a>
+                  </div>
+                `}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Switch Views smoothly like a real multi-page site
+      document.getElementById('homeView').classList.add('hidden');
+      document.getElementById('generatorView').classList.add('hidden');
+      document.getElementById('mobileSearchContainer').classList.add('hidden');
+      detailView.classList.remove('hidden');
+
+      if (pushHistory) {
+        window.location.hash = `post-${id}`;
+      }
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    // General Page Router
+    function navigateTo(page, pushHistory = true) {
+      const homeView = document.getElementById('homeView');
+      const detailView = document.getElementById('detailView');
+      const generatorView = document.getElementById('generatorView');
+      const mobileSearch = document.getElementById('mobileSearchContainer');
+
+      // Stop any playing trailer iframe when leaving detail view
+      if (page !== 'detail') {
+        detailView.innerHTML = '';
+      }
+
+      if (page === 'home') {
+        homeView.classList.remove('hidden');
+        detailView.classList.add('hidden');
+        generatorView.classList.add('hidden');
+        mobileSearch.classList.remove('hidden');
+        if (pushHistory) window.location.hash = 'home';
+      } else if (page === 'generator') {
+        homeView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        generatorView.classList.remove('hidden');
+        mobileSearch.classList.add('hidden');
+        if (pushHistory) window.location.hash = 'generator';
+      }
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    // Support Browser Back / Forward Buttons
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash.startsWith('post-')) {
+        const postId = hash.replace('post-', '');
+        openPostPage(postId, false);
+      } else if (hash === 'generator') {
+        navigateTo('generator', false);
+      } else {
+        navigateTo('home', false);
+      }
+    });
+
+    // ==========================================
+    // TMDB API AUTO-FETCHER (POSTS + TRAILERS + POSTERS)
+    // ==========================================
+    async function searchTMDB() {
+      const apiKey = document.getElementById('tmdbApiKey').value.trim();
+      const query = document.getElementById('tmdbSearchQuery').value.trim();
+      const resultsBox = document.getElementById('tmdbResults');
+
+      if (!apiKey) {
+        alert("Please enter your TMDB API Key first, or use the 1-Click Demo Auto-Fill buttons below!");
+        return;
+      }
+      if (!query) {
+        alert("Please enter a Movie, Web Series, or Anime name to search.");
+        return;
+      }
+
+      resultsBox.classList.remove('hidden');
+      resultsBox.innerHTML = `<div class="text-xs text-gray-400 py-2"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Searching TMDB database...</div>`;
+
+      try {
+        const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+          resultsBox.innerHTML = `<div class="text-xs text-red-400">No results found on TMDB.</div>`;
+          return;
+        }
+
+        const items = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv').slice(0, 6);
+        resultsBox.innerHTML = items.map(item => {
+          const title = item.title || item.name;
+          const date = (item.release_date || item.first_air_date || '').slice(0, 4);
+          const poster = item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : 'https://placehold.co/100x150?text=No+Img';
+          return `
+            <div class="flex items-center justify-between gap-3 bg-gray-900 p-2 rounded-lg border border-gray-800">
+              <div class="flex items-center gap-2.5">
+                <img src="${poster}" class="w-10 h-14 object-cover rounded" />
+                <div>
+                  <div class="text-xs font-bold text-white">${title} (${date || 'N/A'})</div>
+                  <div class="text-[10px] text-amber-400 uppercase">${item.media_type === 'tv' ? 'TV / Web Series / Anime' : 'Movie'}</div>
+                </div>
+              </div>
+              <button type="button" onclick="selectTMDBItem(${item.id}, '${item.media_type}')" class="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+                Auto-Fill
+              </button>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        resultsBox.innerHTML = `<div class="text-xs text-red-400">Error fetching TMDB. Please verify your API Key.</div>`;
+      }
+    }
+
+    async function selectTMDBItem(id, mediaType) {
+      const apiKey = document.getElementById('tmdbApiKey').value.trim();
+      try {
+        const res = await fetch(`https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${apiKey}&append_to_response=videos,images`);
+        const details = await res.json();
+
+        const isTV = mediaType === 'tv';
+        const isAnime = details.original_language === 'ja' && details.genres.some(g => g.name.toLowerCase().includes('animation'));
+
+        document.getElementById('formType').value = isAnime ? 'Anime' : (isTV ? 'Web Series' : 'Movie');
+        document.getElementById('formTitle').value = details.title || details.name || '';
+        document.getElementById('formYear').value = (details.release_date || details.first_air_date || '2024').slice(0, 4);
+        document.getElementById('formDuration').value = isTV 
+          ? `${details.number_of_seasons || 1} Seasons • ${details.number_of_episodes || '?'} Eps`
+          : `${details.runtime || 120} min`;
+        document.getElementById('formRating').value = details.vote_average ? details.vote_average.toFixed(1) : 8.0;
+        document.getElementById('formGenres').value = (details.genres || []).map(g => g.name).join(', ');
+        document.getElementById('formPoster').value = details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : '';
+        document.getElementById('formBackdrop').value = details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : '';
+        document.getElementById('formReview').value = details.overview || '';
+
+        // Find official YouTube trailer
+        const videos = (details.videos && details.videos.results) || [];
+        const trailer = videos.find(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
+        document.getElementById('formTrailer').value = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : '';
+
+        document.getElementById('tmdbResults').classList.add('hidden');
+      } catch (e) {
+        alert("Could not load full details from TMDB.");
+      }
+    }
+
+    // 1-Click Demo Presets
+    function fillPreset(key) {
+      if (key === 'stranger') {
+        document.getElementById('formType').value = 'Web Series';
+        document.getElementById('formTitle').value = 'Stranger Things';
+        document.getElementById('formYear').value = '2016';
+        document.getElementById('formDuration').value = '4 Seasons • 34 Eps';
+        document.getElementById('formPlatform').value = 'Netflix';
+        document.getElementById('formAudio').value = 'English / Hindi';
+        document.getElementById('formRating').value = '8.7';
+        document.getElementById('formGenres').value = 'Sci-Fi, Horror, Mystery';
+        document.getElementById('formPoster').value = 'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg';
+        document.getElementById('formBackdrop').value = 'https://image.tmdb.org/t/p/original/56v2KjBlU4XaOv9rVYEQypROD7P.jpg';
+        document.getElementById('formTrailer').value = 'https://www.youtube.com/watch?v=b9EkMc79ZSU';
+        document.getElementById('formSafety').value = 'Caution';
+        document.getElementById('formAge').value = '16+';
+        document.getElementById('formNudity').value = 'Mild';
+        document.getElementById('formViolence').value = 'Moderate';
+        document.getElementById('formProfanity').value = 'Moderate';
+        document.getElementById('formParentalNote').value = 'Contains supernatural monster horror, blood/gore in Season 4, and teen romance.';
+        document.getElementById('formReview').value = 'When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.';
+      } else if (key === 'aot') {
+        document.getElementById('formType').value = 'Anime';
+        document.getElementById('formTitle').value = 'Attack on Titan';
+        document.getElementById('formYear').value = '2013';
+        document.getElementById('formDuration').value = '4 Seasons • 89 Eps';
+        document.getElementById('formPlatform').value = 'Crunchyroll';
+        document.getElementById('formAudio').value = 'Japanese / English';
+        document.getElementById('formRating').value = '9.1';
+        document.getElementById('formGenres').value = 'Action, Dark Fantasy, Anime';
+        document.getElementById('formPoster').value = 'https://image.tmdb.org/t/p/w500/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg';
+        document.getElementById('formBackdrop').value = 'https://image.tmdb.org/t/p/original/rqbCbjB19amtOtFQbb3K2lgm2zv.jpg';
+        document.getElementById('formTrailer').value = 'https://www.youtube.com/watch?v=MGRm4IzK1SQ';
+        document.getElementById('formSafety').value = 'Caution';
+        document.getElementById('formAge').value = '16+';
+        document.getElementById('formNudity').value = 'None';
+        document.getElementById('formViolence').value = 'Severe';
+        document.getElementById('formProfanity').value = 'Mild';
+        document.getElementById('formParentalNote').value = 'Zero sexual content or fan-service, but features heavy animated blood, gore, and intense war violence.';
+        document.getElementById('formReview').value = 'After his hometown is destroyed and his mother is killed, young Eren Jaeger vows to cleanse the earth of the giant humanoid Titans that have brought humanity to the brink of extinction.';
+      } else if (key === 'dune') {
+        document.getElementById('formType').value = 'Movie';
+        document.getElementById('formTitle').value = 'Dune: Part Two';
+        document.getElementById('formYear').value = '2024';
+        document.getElementById('formDuration').value = '2h 46m';
+        document.getElementById('formPlatform').value = 'Max / Prime Video';
+        document.getElementById('formAudio').value = 'English / Hindi';
+        document.getElementById('formRating').value = '8.9';
+        document.getElementById('formGenres').value = 'Sci-Fi, Adventure';
+        document.getElementById('formPoster').value = 'https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg';
+        document.getElementById('formBackdrop').value = 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg';
+        document.getElementById('formTrailer').value = 'https://www.youtube.com/watch?v=Way9Dexny3w';
+        document.getElementById('formSafety').value = 'Safe';
+        document.getElementById('formAge').value = '13+';
+        document.getElementById('formNudity').value = 'None';
+        document.getElementById('formViolence').value = 'Moderate';
+        document.getElementById('formProfanity').value = 'None';
+        document.getElementById('formParentalNote').value = 'Clean epic sci-fi action movie with zero explicit scenes.';
+        document.getElementById('formReview').value = 'Paul Atreides unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family.';
+      }
+    }
+
+    // Handle Form Submission & Generate JSON
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const newId = String(Date.now());
+      const posterUrl = document.getElementById('formPoster').value.trim();
+      const backdropUrl = document.getElementById('formBackdrop').value.trim() || posterUrl;
+
+      const newItem = {
+        id: newId,
+        title: document.getElementById('formTitle').value.trim(),
+        type: document.getElementById('formType').value,
+        year: Number(document.getElementById('formYear').value),
+        duration: document.getElementById('formDuration').value.trim(),
+        platform: document.getElementById('formPlatform').value.trim() || 'OTT',
+        audio: document.getElementById('formAudio').value.trim() || 'Original',
+        rating: Number(document.getElementById('formRating').value),
+        genres: document.getElementById('formGenres').value.split(',').map(s => s.trim()).filter(Boolean),
+        poster: posterUrl,
+        backdrop: backdropUrl,
+        gallery: [posterUrl, backdropUrl].filter(Boolean),
+        trailerKey: extractYouTubeId(document.getElementById('formTrailer').value),
+        safety: document.getElementById('formSafety').value,
+        ageRating: document.getElementById('formAge').value.trim(),
+        nudity: document.getElementById('formNudity').value,
+        violence: document.getElementById('formViolence').value,
+        profanity: document.getElementById('formProfanity').value,
+        parentalNote: document.getElementById('formParentalNote').value.trim(),
+        review: document.getElementById('formReview').value.trim()
+      };
+
+      mediaItems.unshift(newItem);
+      renderGrid();
+
+      const jsonBox = document.getElementById('jsonOutputBox');
+      const jsonCode = document.getElementById('jsonCode');
+      jsonCode.textContent = JSON.stringify(newItem, null, 2);
+      jsonBox.classList.remove('hidden');
+
+      // Open the newly created post page after 1 second or let user copy JSON
+      openPostPage(newId);
+    }
+
+    function copyJSON() {
+      const code = document.getElementById('jsonCode').textContent;
+      navigator.clipboard.writeText(code);
+      alert("JSON Code copied to clipboard!");
+    }
+
+    // Initialize App on Load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderGrid();
+      const hash = window.location.hash.replace('#', '');
+      if (hash.startsWith('post-')) {
+        openPostPage(hash.replace('post-', ''), false);
+      } else if (hash === 'generator') {
+        navigateTo('generator', false);
+      }
+    });
+  </script>
+</body>
+</html>
