@@ -42,11 +42,12 @@ function renderAddPostFormTab() {
                     <option value="jikan_anime">Free Jikan API — Anime</option>
                     <option value="tvmaze_show">Free TVMaze API — Shows</option>
                 </select>
-                <input type="text" id="apiSearchQuery" placeholder="Type title to search..." class="flex-1 px-4 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs sm:text-sm focus:outline-none focus:border-rose-500">
+                <input type="text" id="apiSearchQuery" placeholder="Title, TMDB ID (e.g. 550) or TMDB link (themoviedb.org/movie/550)" class="flex-1 px-4 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs sm:text-sm focus:outline-none focus:border-rose-500">
                 <button type="button" onclick="searchExternalAPI()" class="px-5 py-2.5 rounded-xl accent-bg text-white font-extrabold text-xs shrink-0 hover:opacity-95">
                     Search & Auto-Fill
                 </button>
             </div>
+            <p class="text-[10px] text-slate-500 mt-2">টাইটেল লিখে সার্চ করলে API কল বেশি লাগে। তাই সরাসরি <b>TMDB ID</b> বা <b>TMDB লিংক</b> দিন — ১টা কলেই সব ডেটা, ট্রেলার ও কাস্ট ছবি আসবে।</p>
             <div id="apiSearchResults" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3 hidden"></div>
         </div>
 
@@ -130,6 +131,14 @@ function renderAddPostFormTab() {
                 <input type="text" id="postTrailer" placeholder="YouTube Trailer URL (any YouTube link works)" class="px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
             </div>
 
+            <div id="castPreviewBox" class="hidden p-3 rounded-xl bg-[#090a0f] border border-subtle">
+                <div class="flex items-center justify-between mb-2">
+                    <span id="castPreviewTitle" class="text-[11px] font-bold uppercase text-slate-400"></span>
+                    <button type="button" onclick="clearPendingCast()" class="text-[11px] text-rose-400 hover:underline">Clear cast</button>
+                </div>
+                <div id="castPreviewList" class="flex gap-2 overflow-x-auto pb-1"></div>
+            </div>
+
             <div>
                 <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Story Summary *</label>
                 <textarea id="postSummary" rows="3" required placeholder="Plot synopsis..." class="w-full px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs"></textarea>
@@ -152,6 +161,7 @@ function renderAddPostFormTab() {
         </form>
     `;
     updateSEOPermalinkPreview();
+    if (typeof renderCastPreview === 'function') renderCastPreview();
 }
 
 function renderManagePostsTab() {
@@ -202,7 +212,7 @@ function renderApiResults(items) {
         return;
     }
     box.innerHTML = items.map((it, i) => `
-        <div onclick="fillFormFromAPI(apiResultsCache[${i}])" class="p-2.5 rounded-xl bg-[#090a0f] border border-subtle hover:border-rose-500 cursor-pointer flex gap-2.5 items-center">
+        <div onclick="pickApiResult(${i})" class="p-2.5 rounded-xl bg-[#090a0f] border border-subtle hover:border-rose-500 cursor-pointer flex gap-2.5 items-center">
             <img src="${esc(it.thumb || it.poster)}" alt="" class="w-12 h-16 object-cover rounded-lg bg-card" onerror="this.style.visibility='hidden'">
             <div class="overflow-hidden">
                 <h4 class="font-bold text-xs truncate">${esc(it.title)}</h4>
@@ -221,7 +231,9 @@ async function searchExternalAPI() {
     resultsBox.innerHTML = `<p class="text-xs text-slate-400 col-span-full">Searching API...</p>`;
 
     try {
-        if (source === 'jikan_anime') {
+        if (parseTmdbInput(query, source)) {
+            await tmdbSearchOrLookup(source, query, resultsBox);
+        } else if (source === 'jikan_anime') {
             const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=3`);
             if (!res.ok) throw new Error(res.status === 429 ? 'Too many requests, wait a few seconds and try again.' : 'Jikan API error ' + res.status);
             const data = await res.json();
@@ -260,33 +272,173 @@ async function searchExternalAPI() {
                 };
             }));
         } else {
-            const tmdbKey = (localStorage.getItem('cineguide_tmdb_key') || '').trim();
-            if (!tmdbKey) {
-                resultsBox.innerHTML = `<p class="text-xs text-amber-400 col-span-full">Please save your TMDB API Key in Settings first!</p>`;
-                return;
-            }
-            const type = source === 'tmdb_tv' ? 'tv' : 'movie';
-            const res = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${encodeURIComponent(tmdbKey)}&query=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.status_message || 'TMDB error ' + res.status);
-            renderApiResults((data.results || []).slice(0, 3).map(m => ({
-                title: m.title || m.name,
-                year: (m.release_date || m.first_air_date || String(new Date().getFullYear())).slice(0, 4),
-                category: type === 'tv' ? 'TV Series' : 'Movie', industry: 'Hollywood',
-                rating: Number(m.vote_average || 7).toFixed(1),
-                poster: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : '',
-                backdrop: m.backdrop_path ? `https://image.tmdb.org/t/p/w1280${m.backdrop_path}` : '',
-                thumb: m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : '',
-                language: (m.original_language || 'en').toUpperCase(),
-                duration: type === 'tv' ? '1 Season' : '1h 55m',
-                ageRating: m.adult ? '18+' : 'PG-13',
-                genres: (m.genre_ids || []).map(id => TMDB_GENRES[id]).filter(Boolean).join(', ') || 'Drama',
-                summary: m.overview || ''
-            })));
+            await tmdbSearchOrLookup(source, query, resultsBox);
         }
     } catch (err) {
         resultsBox.innerHTML = `<p class="text-xs text-rose-400 col-span-full">${esc(err.message || 'API Error. Check your internet connection.')}</p>`;
     }
+}
+
+
+// ===================== TMDB: ID / LINK LOOKUP + FULL DETAILS =====================
+let pendingCast = [];
+let pendingTmdbId = '';
+
+function parseTmdbInput(input, source) {
+    const q = String(input || '').trim();
+    // link: themoviedb.org/movie/550-fight-club  or  /tv/1399
+    let m = q.match(/themoviedb\.org\/(?:[a-z]{2}(?:-[A-Z]{2})?\/)?(movie|tv)\/(\d+)/i);
+    if (m) return { type: m[1].toLowerCase(), id: m[2] };
+    // "movie/550" or "tv/1399"
+    m = q.match(/^(movie|tv)\s*[\/:\s]\s*(\d+)$/i);
+    if (m) return { type: m[1].toLowerCase(), id: m[2] };
+    // plain number
+    if (/^\d{1,9}$/.test(q)) return { type: source === 'tmdb_tv' ? 'tv' : 'movie', id: q, guessed: true };
+    return null;
+}
+
+async function tmdbRequest(path, params) {
+    const key = (localStorage.getItem('cineguide_tmdb_key') || '').trim();
+    if (!key) throw new Error('Please save your TMDB API Key in Settings first!');
+    const qs = new URLSearchParams(params || {});
+    const headers = {};
+    // v4 "Read Access Token" (long JWT) or v3 api_key — both work
+    if (key.length > 60 && key.split('.').length === 3) headers['Authorization'] = 'Bearer ' + key;
+    else qs.set('api_key', key);
+    const res = await fetch(`https://api.themoviedb.org/3${path}?${qs.toString()}`, { headers });
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) {
+        const err = new Error(data.status_message || ('TMDB error ' + res.status));
+        err.status = res.status;
+        throw err;
+    }
+    return data;
+}
+
+function pickTmdbTrailer(videos) {
+    const list = ((videos && videos.results) || []).filter(v => v.site === 'YouTube' && v.key);
+    if (!list.length) return '';
+    const score = v => (v.type === 'Trailer' ? 4 : v.type === 'Teaser' ? 2 : 0) + (v.official ? 2 : 0) + (v.iso_639_1 === 'en' ? 1 : 0);
+    list.sort((a, b) => score(b) - score(a));
+    return 'https://www.youtube.com/watch?v=' + list[0].key;
+}
+
+function fmtRuntime(min) {
+    min = Number(min || 0);
+    if (!min) return '';
+    const h = Math.floor(min / 60), m = min % 60;
+    return h ? `${h}h ${m}m` : `${m}m`;
+}
+
+function tmdbIndustry(d) {
+    const c = ((d.production_countries || [])[0] || {}).iso_3166_1 || (d.origin_country || [])[0] || '';
+    return ({ US: 'Hollywood', GB: 'Hollywood', IN: 'Bollywood', KR: 'Korean', JP: 'Japanese', CN: 'Chinese', TH: 'Thai', TR: 'Turkish', BD: 'Bangla' })[c] || 'Hollywood';
+}
+
+async function fetchTmdbFull(type, id) {
+    const detail = { append_to_response: 'videos,credits', include_video_language: 'en,null,hi,bn' };
+    let d;
+    try {
+        d = await tmdbRequest(`/${type}/${id}`, detail);
+    } catch (e) {
+        throw new Error(e.status === 404 ? `TMDB-তে ${type} ID ${id} পাওয়া যায়নি।` : e.message);
+    }
+    // if the first call came back without any YouTube video, retry videos with no language filter
+    let trailer = pickTmdbTrailer(d.videos);
+    if (!trailer) {
+        try { trailer = pickTmdbTrailer(await tmdbRequest(`/${type}/${id}/videos`, {})); } catch (e) {}
+    }
+    const isTv = type === 'tv';
+    const cast = ((d.credits && d.credits.cast) || []).slice(0, 12).map(c => ({
+        actorId: 'tmdb-' + c.id,
+        tmdbPersonId: c.id,
+        name: c.name,
+        character: c.character || '',
+        photo: c.profile_path ? `https://image.tmdb.org/t/p/w500${c.profile_path}` : ''
+    }));
+    const runtime = isTv ? ((d.episode_run_time || [])[0] || (d.last_episode_to_air && d.last_episode_to_air.runtime) || 0) : d.runtime;
+    return {
+        tmdbId: String(d.id),
+        title: d.title || d.name,
+        year: (d.release_date || d.first_air_date || String(new Date().getFullYear())).slice(0, 4),
+        category: isTv ? 'TV Series' : 'Movie',
+        industry: tmdbIndustry(d),
+        rating: Number(d.vote_average || 7).toFixed(1),
+        poster: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : '',
+        backdrop: d.backdrop_path ? `https://image.tmdb.org/t/p/w1280${d.backdrop_path}` : '',
+        thumb: d.poster_path ? `https://image.tmdb.org/t/p/w200${d.poster_path}` : '',
+        language: ((d.spoken_languages || [])[0] || {}).english_name || (d.original_language || 'en').toUpperCase(),
+        duration: fmtRuntime(runtime) || (isTv ? `${d.number_of_seasons || 1} Season` : '1h 55m'),
+        ageRating: d.adult ? '18+' : 'PG-13',
+        platform: isTv ? (((d.networks || [])[0] || {}).name || '') : '',
+        genres: (d.genres || []).map(g => g.name).join(', ') || 'Drama',
+        summary: d.overview || '',
+        trailer,
+        cast
+    };
+}
+
+async function tmdbSearchOrLookup(source, query, resultsBox) {
+    const parsed = parseTmdbInput(query, source);
+    if (parsed) {
+        // ID / link → ONE direct lookup, no title search
+        resultsBox.innerHTML = `<p class="text-xs text-slate-400 col-span-full">TMDB থেকে ডেটা আনা হচ্ছে (ID ${esc(parsed.id)})...</p>`;
+        let full;
+        try {
+            full = await fetchTmdbFull(parsed.type, parsed.id);
+        } catch (e) {
+            // a bare number might belong to the other type (movie <-> tv)
+            if (parsed.guessed) full = await fetchTmdbFull(parsed.type === 'movie' ? 'tv' : 'movie', parsed.id);
+            else throw e;
+        }
+        renderApiResults([full]);
+        fillFormFromAPI(full);
+        return;
+    }
+
+    const type = source === 'tmdb_tv' ? 'tv' : 'movie';
+    const data = await tmdbRequest(`/search/${type}`, { query });
+    renderApiResults((data.results || []).slice(0, 3).map(m => ({
+        tmdbLookup: { type, id: m.id },
+        title: m.title || m.name,
+        year: (m.release_date || m.first_air_date || String(new Date().getFullYear())).slice(0, 4),
+        rating: Number(m.vote_average || 7).toFixed(1),
+        thumb: m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : ''
+    })));
+}
+
+function renderCastPreview() {
+    const box = document.getElementById('castPreviewBox');
+    if (!box) return;
+    if (!pendingCast.length) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    document.getElementById('castPreviewTitle').textContent = `Cast (${pendingCast.length}) — will be saved with the post`;
+    document.getElementById('castPreviewList').innerHTML = pendingCast.map((c, i) => `
+        <div class="w-16 shrink-0 text-center relative">
+            <button type="button" onclick="removePendingCast(${i})" class="absolute -top-1 -right-1 z-10 w-4 h-4 rounded-full bg-rose-600 text-white text-[10px] leading-4">×</button>
+            <img src="${esc(c.photo)}" alt="" class="w-16 h-20 object-cover rounded-lg bg-card" onerror="this.style.visibility='hidden'">
+            <p class="text-[9px] text-slate-300 truncate mt-1">${esc(c.name)}</p>
+        </div>`).join('');
+}
+function removePendingCast(i) { pendingCast.splice(i, 1); renderCastPreview(); }
+function clearPendingCast() { pendingCast = []; renderCastPreview(); }
+
+async function pickApiResult(i) {
+    const it = apiResultsCache[i];
+    if (!it) return;
+    if (it.tmdbLookup) {
+        // user tapped a title-search result → now fetch full details (trailer + cast)
+        try {
+            showAdminToast('Fetching trailer & cast...');
+            const full = await fetchTmdbFull(it.tmdbLookup.type, it.tmdbLookup.id);
+            fillFormFromAPI(full);
+        } catch (e) {
+            showAdminToast(e.message || 'TMDB error');
+        }
+        return;
+    }
+    fillFormFromAPI(it);
 }
 
 function fillFormFromAPI(item) {
@@ -302,8 +454,14 @@ function fillFormFromAPI(item) {
     document.getElementById('postAgeRating').value = item.ageRating || 'PG-13';
     document.getElementById('postGenres').value = item.genres || 'Drama';
     document.getElementById('postSummary').value = item.summary || '';
+    if (item.platform) document.getElementById('postPlatform').value = item.platform;
+    if (item.trailer) document.getElementById('postTrailer').value = item.trailer;
+    pendingCast = Array.isArray(item.cast) ? item.cast : [];
+    pendingTmdbId = item.tmdbId || '';
+    renderCastPreview();
     updateSEOPermalinkPreview();
-    showAdminToast(`Auto-filled "${item.title}"!`);
+    const extra = item.tmdbId ? ` (${item.trailer ? 'trailer ✓' : 'no trailer found'}, ${pendingCast.length} cast)` : '';
+    showAdminToast(`Auto-filled "${item.title}"!${extra}`);
 }
 
 
@@ -358,7 +516,8 @@ function saveOrUpdateReviewPost(e) {
             drugsAlcohol: document.getElementById('pgDrugs').value.trim() || 'None.'
         },
         verdict: document.getElementById('pgVerdict').value.trim() || 'Suitable for family viewing.',
-        cast: old ? (old.cast || []) : [],
+        tmdbId: pendingTmdbId || (old ? (old.tmdbId || '') : ''),
+        cast: pendingCast.slice(),
         episodes: old ? (old.episodes || []) : [],
         defaultComments: old ? (old.defaultComments || []) : []
     };
@@ -443,6 +602,9 @@ function loadPostForEditing(index) {
         document.getElementById('pgDrugs').value = item.parentalGuide.drugsAlcohol || '';
     }
     document.getElementById('pgVerdict').value = item.verdict || '';
+    pendingCast = Array.isArray(item.cast) ? item.cast.slice() : [];
+    pendingTmdbId = item.tmdbId || '';
+    renderCastPreview();
 
     updateSEOPermalinkPreview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -459,6 +621,9 @@ function resetPostFormState() {
     if (btn) btn.textContent = 'Publish Review Post';
     const form = document.getElementById('postForm');
     if (form) form.reset();
+    pendingCast = [];
+    pendingTmdbId = '';
+    renderCastPreview();
     updateSEOPermalinkPreview();
 }
 
