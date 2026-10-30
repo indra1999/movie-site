@@ -5,7 +5,7 @@
 
 function initCategoriesAdsModule() {
     const container = document.getElementById('tabSection-categories');
-    const ads = JSON.parse(localStorage.getItem('cineguide_ads_config') || '{"topBanner":"","detailBanner":"","footerBanner":""}');
+    const ads = safeParse('cineguide_ads_config', { topBanner: '', detailBanner: '', footerBanner: '' });
 
     container.innerHTML = `
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -33,15 +33,15 @@ function initCategoriesAdsModule() {
                 <form onsubmit="saveAdCodes(event)" class="space-y-3">
                     <div>
                         <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Home Top Banner Ad Code (HTML / Script)</label>
-                        <textarea id="adTopInput" rows="2" placeholder="<script>...</script>" class="w-full px-3 py-2 rounded-xl bg-[#090a0f] border border-subtle text-xs font-mono">${ads.topBanner || ''}</textarea>
+                        <textarea id="adTopInput" rows="2" placeholder="<script>...</script>" class="w-full px-3 py-2 rounded-xl bg-[#090a0f] border border-subtle text-xs font-mono">${esc(ads.topBanner || '')}</textarea>
                     </div>
                     <div>
                         <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Post Detail Page Ad Slot Code</label>
-                        <textarea id="adDetailInput" rows="2" placeholder="Ad code inside movie review page..." class="w-full px-3 py-2 rounded-xl bg-[#090a0f] border border-subtle text-xs font-mono">${ads.detailBanner || ''}</textarea>
+                        <textarea id="adDetailInput" rows="2" placeholder="Ad code inside movie review page..." class="w-full px-3 py-2 rounded-xl bg-[#090a0f] border border-subtle text-xs font-mono">${esc(ads.detailBanner || '')}</textarea>
                     </div>
                     <div>
                         <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Footer Sticky / Sponsor Ad Code</label>
-                        <textarea id="adFooterInput" rows="2" placeholder="Footer ad code..." class="w-full px-3 py-2 rounded-xl bg-[#090a0f] border border-subtle text-xs font-mono">${ads.footerBanner || ''}</textarea>
+                        <textarea id="adFooterInput" rows="2" placeholder="Footer ad code..." class="w-full px-3 py-2 rounded-xl bg-[#090a0f] border border-subtle text-xs font-mono">${esc(ads.footerBanner || '')}</textarea>
                     </div>
                     <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs">
                         Publish Ad Codes to Website
@@ -57,18 +57,21 @@ function addAdminCategory(e) {
     e.preventDefault();
     const val = document.getElementById('newCategoryInput').value.trim();
     if (!val) return;
-    const list = JSON.parse(localStorage.getItem('cineguide_custom_categories') || '[]');
-    if (!list.includes(val)) {
-        list.push(val);
-        localStorage.setItem('cineguide_custom_categories', JSON.stringify(list));
+    const list = safeParse('cineguide_custom_categories', []);
+    if (list.some(c => c.toLowerCase() === val.toLowerCase())) {
+        showAdminToast(`Category "${val}" already exists`);
+        return;
     }
+    list.push(val);
+    safeSave('cineguide_custom_categories', list);
     document.getElementById('newCategoryInput').value = '';
     renderAdminCategoriesPills();
+    refreshCategoryOptions();
     showAdminToast(`Category "${val}" created!`);
 }
 
 function renderAdminCategoriesPills() {
-    const list = JSON.parse(localStorage.getItem('cineguide_custom_categories') || '[]');
+    const list = safeParse('cineguide_custom_categories', []);
     const box = document.getElementById('customCategoriesPills');
     if (!box) return;
     if (list.length === 0) {
@@ -77,17 +80,18 @@ function renderAdminCategoriesPills() {
     }
     box.innerHTML = list.map((c, idx) => `
         <span class="px-3 py-1.5 rounded-xl bg-[#090a0f] border border-subtle text-xs font-bold flex items-center gap-2">
-            ${c}
+            ${esc(c)}
             <button onclick="removeAdminCategory(${idx})" class="text-rose-400 hover:text-white">✕</button>
         </span>
     `).join('');
 }
 
 function removeAdminCategory(idx) {
-    const list = JSON.parse(localStorage.getItem('cineguide_custom_categories') || '[]');
+    const list = safeParse('cineguide_custom_categories', []);
     list.splice(idx, 1);
-    localStorage.setItem('cineguide_custom_categories', JSON.stringify(list));
+    safeSave('cineguide_custom_categories', list);
     renderAdminCategoriesPills();
+    refreshCategoryOptions();
     showAdminToast("Category removed!");
 }
 
@@ -98,6 +102,17 @@ function saveAdCodes(e) {
         detailBanner: document.getElementById('adDetailInput').value.trim(),
         footerBanner: document.getElementById('adFooterInput').value.trim()
     };
-    localStorage.setItem('cineguide_ads_config', JSON.stringify(config));
+    safeSave('cineguide_ads_config', config);
     showAdminToast("Advertisement codes published!");
+}
+
+// Keep the "Main Category" dropdown of the post form in sync with custom categories
+function refreshCategoryOptions() {
+    const sel = document.getElementById('postCategory');
+    if (!sel) return;
+    const current = sel.value;
+    const base = ['Movie', 'TV Series', 'TV Shows', 'Anime'];
+    const custom = safeParse('cineguide_custom_categories', []);
+    sel.innerHTML = [...base, ...custom].map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    if ([...base, ...custom].includes(current)) sel.value = current;
 }
