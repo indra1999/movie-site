@@ -1,18 +1,28 @@
 // ============================================================================
-// MODULE 1: POSTS, SEO SLUG, TMDB API & EDIT/UPDATE POSTS SECTION
+// MODULE 1: POSTS, SEO SLUG, TMDB API & SEPARATE MANAGE/EDIT TAB
 // File: admin-modules/posts-api.js
 // ============================================================================
 
-let editingPostIndex = null; // Track if we are editing an existing post
+let editingPostIndex = null;
 
 function initPostsModule() {
+    renderAddPostFormTab();
+    renderManagePostsTab();
+}
+
+function renderAddPostFormTab() {
     const container = document.getElementById('tabSection-posts');
     const customDomain = localStorage.getItem('cineguide_custom_domain') || window.location.origin;
 
     container.innerHTML = `
-        <div class="mb-6">
-            <h2 id="formMainHeading" class="text-2xl font-black">Publish Movie, Series or Anime Review</h2>
-            <p class="text-xs text-slate-400 mt-1">Auto-fetch metadata via TMDB / Free Jikan API or edit your existing published reviews.</p>
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h2 id="formMainHeading" class="text-2xl font-black">Publish New Review Post</h2>
+                <p class="text-xs text-slate-400 mt-1">Auto-fetch metadata via TMDB / Free Jikan API or publish manually.</p>
+            </div>
+            <button onclick="switchAdminTab('manage')" class="px-4 py-2 rounded-xl bg-elevated hover:bg-white/10 text-xs font-bold text-slate-200 border border-subtle flex items-center gap-1.5">
+                <i data-lucide="film" class="w-3.5 h-3.5 text-rose-500"></i> View All Posts
+            </button>
         </div>
 
         <!-- API AUTO-FETCH SEARCH BAR -->
@@ -137,12 +147,24 @@ function initPostsModule() {
                 Publish Review Post
             </button>
         </form>
+    `;
+    updateSEOPermalinkPreview();
+}
 
-        <!-- PUBLISHED CUSTOM POSTS LIST & EDIT MANAGER -->
-        <div>
-            <h3 class="text-base font-extrabold mb-3">Manage & Edit Published Posts</h3>
-            <div id="adminPublishedPostsList" class="space-y-2.5"></div>
+function renderManagePostsTab() {
+    const container = document.getElementById('tabSection-manage');
+    container.innerHTML = `
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-black">Manage Published Posts</h2>
+                <p class="text-xs text-slate-400 mt-1">View all your published posts with posters, edit details or delete instantly.</p>
+            </div>
+            <button onclick="switchAdminTab('posts')" class="px-4 py-2 rounded-xl accent-bg text-xs font-bold text-white flex items-center gap-1.5 shadow">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New Post
+            </button>
         </div>
+
+        <div id="adminPublishedPostsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
     `;
     renderAdminPublishedPosts();
 }
@@ -159,8 +181,10 @@ function updateSEOPermalinkPreview() {
     const year = document.getElementById('postYear').value.trim() || '2026';
     const slug = generateSEOSlug(title, year);
     const domain = (localStorage.getItem('cineguide_custom_domain') || window.location.origin).replace(/\/$/, '');
-    document.getElementById('postSlug').value = slug;
-    document.getElementById('seoLinkPreview').textContent = `${domain}/?post=${slug}`;
+    const slugEl = document.getElementById('postSlug');
+    const previewEl = document.getElementById('seoLinkPreview');
+    if (slugEl) slugEl.value = slug;
+    if (previewEl) previewEl.textContent = `${domain}/?post=${slug}`;
 }
 
 async function searchExternalAPI() {
@@ -336,36 +360,44 @@ function saveOrUpdateReviewPost(e) {
 
     localStorage.setItem('cineguide_custom_reviews', JSON.stringify(existing));
     resetPostFormState();
-    renderAdminPublishedPosts();
+    switchAdminTab('manage');
 }
 
 function renderAdminPublishedPosts() {
     const list = JSON.parse(localStorage.getItem('cineguide_custom_reviews') || '[]');
-    const box = document.getElementById('adminPublishedPostsList');
-    if (!box) return;
+    const grid = document.getElementById('adminPublishedPostsGrid');
+    if (!grid) return;
+    
     if (list.length === 0) {
-        box.innerHTML = `<p class="text-xs text-slate-500">No custom posts created yet.</p>`;
+        grid.innerHTML = `<div class="col-span-full p-10 text-center rounded-2xl bg-card border border-subtle">
+            <p class="text-xs text-slate-400 mb-2">No custom posts created yet.</p>
+            <button onclick="switchAdminTab('posts')" class="px-4 py-2 rounded-xl accent-bg text-white font-bold text-xs">Create First Post</button>
+        </div>`;
         return;
     }
-    box.innerHTML = list.map((item, idx) => `
-        <div class="p-3.5 rounded-xl bg-card border border-subtle flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3 overflow-hidden">
-                <img src="${item.poster}" class="w-10 h-14 object-cover rounded-lg shrink-0">
-                <div class="truncate">
-                    <h4 class="font-bold text-sm truncate">${item.title} (${item.year})</h4>
-                    <p class="text-[11px] text-emerald-400 font-mono">/?post=${item.slug || item.id}</p>
+
+    grid.innerHTML = list.map((item, idx) => `
+        <div class="p-3 rounded-2xl bg-card border border-subtle flex flex-col justify-between shadow">
+            <div>
+                <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-black mb-3 border border-subtle">
+                    <img src="${item.poster}" alt="${item.title}" class="w-full h-full object-cover">
+                    <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 text-[10px] font-bold text-amber-400 uppercase">${item.category}</span>
+                    <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/75 text-[10px] font-bold text-white">★ ${item.rating}</span>
                 </div>
+                <h4 class="font-extrabold text-sm truncate text-white mb-0.5">${item.title} (${item.year})</h4>
+                <p class="text-[11px] text-emerald-400 font-mono mb-3 truncate">/?post=${item.slug || item.id}</p>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-                <button onclick="loadPostForEditing(${idx})" class="px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-400 hover:bg-amber-500 hover:text-black text-xs font-bold transition">
-                    Edit
+            <div class="flex items-center gap-2 pt-2 border-t border-subtle">
+                <button onclick="loadPostForEditing(${idx})" class="flex-1 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500 hover:text-black text-amber-400 text-xs font-bold transition flex items-center justify-center gap-1">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit
                 </button>
-                <button onclick="deleteCustomPost(${idx})" class="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-600 hover:text-white text-xs font-bold transition">
-                    Delete
+                <button onclick="deleteCustomPost(${idx})" class="flex-1 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-600 hover:text-white text-rose-400 text-xs font-bold transition flex items-center justify-center gap-1">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
                 </button>
             </div>
         </div>
     `).join('');
+    lucide.createIcons();
 }
 
 function loadPostForEditing(index) {
@@ -374,6 +406,8 @@ function loadPostForEditing(index) {
     if (!item) return;
 
     editingPostIndex = index;
+    switchAdminTab('posts');
+
     document.getElementById('formSubTitle').textContent = `Editing: ${item.title}`;
     document.getElementById('cancelEditBtn').classList.remove('hidden');
     document.getElementById('formSubmitBtn').textContent = 'Update Review Post';
@@ -410,7 +444,6 @@ function resetPostFormState() {
     document.getElementById('formSubTitle').textContent = 'Create New Post';
     document.getElementById('cancelEditBtn').classList.add('hidden');
     document.getElementById('formSubmitBtn').textContent = 'Publish Review Post';
-    // Clear form inputs
     const form = document.querySelector('form');
     if (form) form.reset();
     updateSEOPermalinkPreview();
