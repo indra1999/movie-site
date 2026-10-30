@@ -26,7 +26,7 @@ function initUpcomingModule() {
                 <button onclick="switchAdminTab('settings')" class="text-[11px] text-slate-400 hover:text-white underline">TMDB API Key →</button>
             </div>
 
-            <p class="text-[11px] text-slate-400 mb-2">১) আসন্ন রিলিজের লিস্ট আনুন — তারপর যেকোনোটায় ট্যাপ করলে রিলিজ ডেট, ট্রেলার ও কাস্ট সহ ফর্ম ভরে যাবে।</p>
+            <p class="text-[11px] text-slate-400 mb-2">1) Fetch the list of upcoming releases, then tap any title to auto-fill the form with release date, trailer and cast.</p>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                 <select id="upFetchType" class="${sel}">
                     <option value="movie">Movies</option>
@@ -68,7 +68,7 @@ function initUpcomingModule() {
 
             <div class="border-t border-subtle my-4"></div>
 
-            <p class="text-[11px] text-slate-400 mb-2">২) অথবা সরাসরি <b>TMDB ID</b>, <b>TMDB লিংক</b> বা টাইটেল দিন।</p>
+            <p class="text-[11px] text-slate-400 mb-2">2) Or enter a <b>TMDB ID</b>, a <b>TMDB link</b> or a title directly.</p>
             <div class="flex flex-col sm:flex-row gap-2.5">
                 <input type="text" id="upIdQuery" placeholder="TMDB ID (e.g. 83533), link (themoviedb.org/movie/83533) or title"
                     onkeydown="if(event.key==='Enter'){event.preventDefault();lookupUpcomingById();}"
@@ -227,7 +227,7 @@ async function fetchUpcomingFromTMDB(reset) {
     if (lang) params.with_original_language = lang;
 
     box.classList.remove('hidden');
-    upStatus('TMDB থেকে আসন্ন রিলিজ আনা হচ্ছে...');
+    upStatus('Fetching upcoming releases from TMDB...');
     try {
         const data = await upTmdb(`/discover/${type}`, params);
         const fresh = (data.results || []).map(m => ({
@@ -239,7 +239,7 @@ async function fetchUpcomingFromTMDB(reset) {
         upResults = upResults.concat(fresh);
         renderUpApiResults();
         document.getElementById('upLoadMoreBtn').classList.toggle('hidden', !(data.total_pages > upPage));
-        upStatus(upResults.length ? `${upResults.length} টি পাওয়া গেছে। যেকোনোটায় ট্যাপ করে ফর্ম ভরুন।` : 'এই ফিল্টারে কোনো আসন্ন রিলিজ পাওয়া যায়নি — Region/Language/সময় বদলে দেখুন।', upResults.length ? 'ok' : 'err');
+        upStatus(upResults.length ? `${upResults.length} found. Tap any title to fill the form.` : 'No upcoming releases found for these filters. Try changing the region, language or time window.', upResults.length ? 'ok' : 'err');
     } catch (err) {
         if (!reset) upPage--;
         upStatus(esc(err.message || 'TMDB error'), 'err');
@@ -297,7 +297,7 @@ async function lookupUpcomingById() {
         }));
         renderUpApiResults();
         document.getElementById('upLoadMoreBtn').classList.add('hidden');
-        upStatus(upResults.length ? 'যেকোনোটায় ট্যাপ করে ফর্ম ভরুন।' : 'কিছু পাওয়া যায়নি। অন্য টাইটেল বা TMDB ID দিন।', upResults.length ? 'ok' : 'err');
+        upStatus(upResults.length ? 'Tap any title to fill the form.' : 'Nothing found. Try another title or a TMDB ID.', upResults.length ? 'ok' : 'err');
     } catch (err) {
         document.getElementById('upApiResults').classList.remove('hidden');
         upStatus(esc(err.message || 'TMDB error'), 'err');
@@ -309,7 +309,7 @@ async function lookupUpcomingById() {
 // ---------------------------------------------------------------------------
 async function loadUpcomingDetails(type, id) {
     const region = (document.getElementById('upFetchRegion') || {}).value || '';
-    upStatus(`TMDB থেকে ডিটেইল, ট্রেলার ও কাস্ট আনা হচ্ছে (ID ${esc(id)})...`);
+    upStatus(`Fetching details, trailer and cast from TMDB (ID ${esc(id)})...`);
     document.getElementById('upApiStatus').classList.remove('hidden');
 
     const extra = type === 'movie' ? 'videos,credits,release_dates,watch/providers' : 'videos,credits,content_ratings,watch/providers';
@@ -317,7 +317,7 @@ async function loadUpcomingDetails(type, id) {
     try {
         d = await upTmdb(`/${type}/${id}`, { append_to_response: extra, include_video_language: 'en,null,hi,bn' });
     } catch (e) {
-        if (e.status === 404) { const err = new Error(`TMDB-তে ${type} ID ${id} পাওয়া যায়নি।`); err.status = 404; throw err; }
+        if (e.status === 404) { const err = new Error(`No ${type} found on TMDB with ID ${id}.`); err.status = 404; throw err; }
         throw e;
     }
     let trailer = upPickTrailer(d.videos);
@@ -389,11 +389,11 @@ function fillUpcomingForm(f) {
     renderUpCast();
 
     const bits = [
-        f.releaseDate ? `Release: ${esc(f.releaseDate)}` : '<span class="text-amber-400">release date TMDB-তে এখনো নেই — হাতে লিখুন</span>',
+        f.releaseDate ? `Release: ${esc(f.releaseDate)}` : '<span class="text-amber-400">release date not on TMDB yet, please enter it manually</span>',
         f.trailer ? 'trailer ✓' : 'no trailer yet',
         `${upPendingCast.length} cast`
     ];
-    upStatus(`✓ “${esc(f.title)}” ফর্মে ভরা হয়েছে — ${bits.join(' • ')}. নিচে স্ক্রল করে চেক করে সেভ করুন।`, 'ok');
+    upStatus(`✓ “${esc(f.title)}” filled in the form (${bits.join(' • ')}). Scroll down, review and save.`, 'ok');
     document.getElementById('upForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
     showAdminToast(`Auto-filled "${f.title}"!`);
 }
