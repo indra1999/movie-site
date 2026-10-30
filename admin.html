@@ -6,6 +6,7 @@
     <title>CINEGUIDE — Secret Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script>window.lucide = window.lucide || { createIcons: function () {} };</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #090a0f; color: #f8fafc; }
@@ -19,11 +20,11 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- ADMIN LOGIN LOCK SCREEN (Username + Password) -->
+    <!-- ================= ADMIN LOGIN LOCK SCREEN ================= -->
     <div id="adminLockScreen" class="fixed inset-0 z-50 bg-[#090a0f] flex items-center justify-center p-4">
         <div class="bg-card border border-subtle rounded-3xl max-w-sm w-full p-7 shadow-2xl text-center">
             <div class="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-500 flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="shield-lock" class="w-7 h-7"></i>
+                <i data-lucide="lock" class="w-7 h-7"></i>
             </div>
             <h1 class="text-xl font-black tracking-wide mb-1"><span class="accent-text">CINE</span>GUIDE ADMIN</h1>
             <p class="text-xs text-slate-400 mb-6">Enter admin credentials to unlock</p>
@@ -39,7 +40,7 @@
         </div>
     </div>
 
-    <!-- MAIN ADMIN DASHBOARD -->
+    <!-- ================= MAIN ADMIN DASHBOARD ================= -->
     <div id="adminAppWrapper" class="hidden flex-1 flex flex-col lg:flex-row">
         
         <!-- LEFT SIDEBAR NAVIGATION -->
@@ -55,7 +56,7 @@
                     </a>
                 </div>
 
-                <!-- Navigation Tabs -->
+                <!-- Navigation Tabs (Added Manage Posts Tab) -->
                 <nav class="flex lg:flex-col gap-1.5 overflow-x-auto no-scrollbar">
                     <button onclick="switchAdminTab('posts')" id="navBtn-posts" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Post
@@ -73,12 +74,12 @@
                         <i data-lucide="users" class="w-4 h-4"></i> Users & Comments
                     </button>
                     <button onclick="switchAdminTab('settings')" id="navBtn-settings" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
-                        <i data-lucide="settings" class="w-4 h-4"></i> SEO & Security
+                        <i data-lucide="settings" class="w-4 h-4"></i> SEO, Footer & Security
                     </button>
                 </nav>
             </div>
 
-            <div class="hidden lg:block pt-4 border-t border-subtle">
+            <div class="block pt-4 border-t border-subtle">
                 <button onclick="logoutAdmin()" class="w-full py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs flex items-center justify-center gap-2">
                     <i data-lucide="log-out" class="w-4 h-4"></i> Lock Admin Panel
                 </button>
@@ -104,6 +105,31 @@
 
     <!-- CORE ADMIN CONTROLLER -->
     <script>
+        function esc(v) {
+            return String(v === undefined || v === null ? '' : v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function safeParse(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw === null || raw === '') return fallback;
+                const v = JSON.parse(raw);
+                return v === null || v === undefined ? fallback : v;
+            } catch (e) { return fallback; }
+        }
+        function safeSave(key, val) {
+            try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+            catch (e) { alert('Could not save: browser storage is full or blocked.'); return false; }
+        }
+        function toEmbedUrl(url) {
+            if (!url) return '';
+            url = String(url).trim();
+            const m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/);
+            if (m) return 'https://www.youtube.com/embed/' + m[1];
+            return /^https?:\/\//.test(url) ? url : '';
+        }
+
         function verifyAdminLogin(e) {
             e.preventDefault();
             const savedUser = localStorage.getItem('cineguide_admin_user') || 'admin';
@@ -140,10 +166,12 @@
             });
             document.getElementById(`navBtn-${tabName}`).className = "admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap";
             
-            if (tabName === 'manage' && typeof renderManagePostsTab === 'function') {
-                renderManagePostsTab();
+            // Refresh manage posts list if switching to manage tab
+            if (tabName === 'manage' && typeof renderAdminPublishedPosts === 'function') {
+                renderAdminPublishedPosts();
             }
             lucide.createIcons();
+            window.scrollTo({ top: 0 });
         }
 
         function showAdminToast(msg) {
