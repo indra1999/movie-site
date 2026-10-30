@@ -61,16 +61,20 @@ function saveNewUpcomingItem(e) {
         note: document.getElementById('upNote').value.trim()
     };
 
-    const list = JSON.parse(localStorage.getItem('cineguide_upcoming') || '[]');
+    const list = safeParse('cineguide_upcoming', []);
     list.unshift(item);
-    localStorage.setItem('cineguide_upcoming', JSON.stringify(list));
+    if (!safeSave('cineguide_upcoming', list)) return;
     e.target.reset();
     renderAdminUpcomingList();
-    showAdminToast(`Added "${item.title}" to Upcoming!`);
+    if (isNaN(Date.parse(item.releaseDate))) {
+        showAdminToast(`Added, but "${item.releaseDate}" is not a recognised date: use e.g. December 18, 2026 so alerts work.`);
+    } else {
+        showAdminToast(`Added "${item.title}" to Upcoming!`);
+    }
 }
 
 function renderAdminUpcomingList() {
-    const list = JSON.parse(localStorage.getItem('cineguide_upcoming') || '[]');
+    const list = safeParse('cineguide_upcoming', []);
     const box = document.getElementById('adminUpcomingList');
     if (!box) return;
     if (list.length === 0) {
@@ -80,8 +84,8 @@ function renderAdminUpcomingList() {
     box.innerHTML = list.map((u, idx) => `
         <div class="p-3.5 rounded-xl bg-card border border-subtle flex items-center justify-between">
             <div>
-                <span class="text-[10px] font-bold text-amber-400">${u.releaseDate} • ${u.releaseWhere}</span>
-                <h4 class="font-bold text-sm">${u.title} (${u.type})</h4>
+                <span class="text-[10px] font-bold text-amber-400">${esc(u.releaseDate)} • ${esc(u.releaseWhere)}</span>
+                <h4 class="font-bold text-sm">${esc(u.title)} (${esc(u.type)})</h4>
             </div>
             <button onclick="deleteUpcomingItem(${idx})" class="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-400 text-xs font-bold">Remove</button>
         </div>
@@ -89,9 +93,9 @@ function renderAdminUpcomingList() {
 }
 
 function deleteUpcomingItem(idx) {
-    const list = JSON.parse(localStorage.getItem('cineguide_upcoming') || '[]');
+    const list = safeParse('cineguide_upcoming', []);
     list.splice(idx, 1);
-    localStorage.setItem('cineguide_upcoming', JSON.stringify(list));
+    safeSave('cineguide_upcoming', list);
     renderAdminUpcomingList();
     showAdminToast("Upcoming item removed!");
 }
