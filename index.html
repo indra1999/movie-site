@@ -1827,7 +1827,7 @@
                             ${item.cast.map(c => `
                                 <div onclick="openCastMember(${item.cast.indexOf(c)})" class="w-36 sm:w-44 shrink-0 cursor-pointer group">
                                     <div class="h-44 sm:h-52 rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2.5 shadow-md">
-                                        <img src="${esc(c.photo)}" alt="${esc(c.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                        <img src="${esc(c.photo)}" alt="${esc(c.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.style.visibility='hidden'">
                                     </div>
                                     <h4 class="font-extrabold text-sm text-theme-main truncate group-hover:text-rose-500">${esc(c.name)}</h4>
                                     <p class="text-xs text-theme-muted truncate">${esc(c.character)}</p>
