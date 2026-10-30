@@ -19,7 +19,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- ================= ADMIN LOGIN LOCK SCREEN (Username + Password) ================= -->
+    <!-- ================= ADMIN LOGIN LOCK SCREEN ================= -->
     <div id="adminLockScreen" class="fixed inset-0 z-50 bg-[#090a0f] flex items-center justify-center p-4">
         <div class="bg-card border border-subtle rounded-3xl max-w-sm w-full p-7 shadow-2xl text-center">
             <div class="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-500 flex items-center justify-center mx-auto mb-4">
@@ -55,10 +55,13 @@
                     </a>
                 </div>
 
-                <!-- Navigation Tabs -->
+                <!-- Navigation Tabs (Added Manage Posts Tab) -->
                 <nav class="flex lg:flex-col gap-1.5 overflow-x-auto no-scrollbar">
                     <button onclick="switchAdminTab('posts')" id="navBtn-posts" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap">
-                        <i data-lucide="film" class="w-4 h-4"></i> Posts & API Auto-Fetch
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Post
+                    </button>
+                    <button onclick="switchAdminTab('manage')" id="navBtn-manage" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
+                        <i data-lucide="film" class="w-4 h-4"></i> Manage Posts
                     </button>
                     <button onclick="switchAdminTab('upcoming')" id="navBtn-upcoming" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
                         <i data-lucide="calendar-clock" class="w-4 h-4"></i> Upcoming Releases
@@ -85,6 +88,7 @@
         <!-- RIGHT CONTENT AREA -->
         <main class="flex-1 p-4 sm:p-7 overflow-y-auto max-w-6xl mx-auto w-full">
             <section id="tabSection-posts" class="admin-tab-section"></section>
+            <section id="tabSection-manage" class="admin-tab-section hidden"></section>
             <section id="tabSection-upcoming" class="admin-tab-section hidden"></section>
             <section id="tabSection-categories" class="admin-tab-section hidden"></section>
             <section id="tabSection-users" class="admin-tab-section hidden"></section>
@@ -135,6 +139,11 @@
                 b.className = "admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap";
             });
             document.getElementById(`navBtn-${tabName}`).className = "admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap";
+            
+            // Refresh manage posts list if switching to manage tab
+            if (tabName === 'manage' && typeof renderAdminPublishedPosts === 'function') {
+                renderAdminPublishedPosts();
+            }
             lucide.createIcons();
         }
 
