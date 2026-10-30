@@ -137,7 +137,7 @@ function initUpcomingModule() {
 // TMDB helpers (self-contained)
 // ---------------------------------------------------------------------------
 async function upTmdb(path, params) {
-    const key = (localStorage.getItem('cineguide_tmdb_key') || '').trim();
+    const key = CineStore.getTmdbKey();
     if (!key) throw new Error('Please save your TMDB API Key in Settings first!');
     const qs = new URLSearchParams(params || {});
     const headers = {};
@@ -489,6 +489,7 @@ function renderAdminUpcomingList() {
 
 function deleteUpcomingItem(idx) {
     const list = safeParse('cineguide_upcoming', []);
+    if (list[idx]) CineStore.markDeleted(list[idx].id);
     list.splice(idx, 1);
     safeSave('cineguide_upcoming', list);
     renderAdminUpcomingList();

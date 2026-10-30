@@ -437,7 +437,7 @@ function parseTmdbInput(input, source) {
 }
 
 async function tmdbRequest(path, params) {
-    const key = (localStorage.getItem('cineguide_tmdb_key') || '').trim();
+    const key = CineStore.getTmdbKey();
     if (!key) throw new Error('Please save your TMDB API Key in Settings first!');
     const qs = new URLSearchParams(params || {});
     const headers = {};
@@ -857,6 +857,7 @@ function deleteCustomPost(index) {
     if (!item) return;
     if (!confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
     list.splice(index, 1);
+    CineStore.markDeleted(item.id);   // so a deleted demo post can never come back
     safeSave('cineguide_custom_reviews', list);
     if (editingPostIndex !== null) resetPostFormState();
     renderAdminPublishedPosts();

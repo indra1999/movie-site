@@ -129,6 +129,7 @@ function exportSiteData() {
         upcoming: safeParse('cineguide_upcoming', []),
         categories: safeParse('cineguide_custom_categories', []),
         ads: safeParse('cineguide_ads_config', {}),
+        deleted: safeParse('cineguide_deleted_ids', []),
         footer: {
             tagline: localStorage.getItem('cineguide_footer_tagline') || '',
             copyright: localStorage.getItem('cineguide_footer_copyright') || '',

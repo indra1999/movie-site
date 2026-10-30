@@ -46,12 +46,45 @@
             upcoming: readJSON('cineguide_upcoming', []),
             categories: readJSON('cineguide_custom_categories', []),
             ads: readJSON('cineguide_ads_config', {}),
+            deleted: readJSON('cineguide_deleted_ids', []),
+            // visitor comments + API key are kept in the private backup/mirror only
+            // (never in the public site-data.json)
+            comments: readJSON('cineguide_comments', {}),
+            private: {
+                tmdbKey: localStorage.getItem('cineguide_tmdb_key') || '',
+                customDomain: localStorage.getItem('cineguide_custom_domain') || ''
+            },
             footer: {
                 tagline: localStorage.getItem('cineguide_footer_tagline') || '',
                 copyright: localStorage.getItem('cineguide_footer_copyright') || '',
                 credit: localStorage.getItem('cineguide_footer_credit') || ''
             }
         };
+    }
+
+    // Comments / deleted ids / API key are only ever ADDED back, never overwritten or wiped.
+    function restoreExtras(data) {
+        if (!data || typeof data !== 'object') return;
+        if (Array.isArray(data.deleted) && data.deleted.length) {
+            const cur = readJSON('cineguide_deleted_ids', []);
+            localStorage.setItem('cineguide_deleted_ids', JSON.stringify([...new Set([...cur, ...data.deleted])]));
+        }
+        if (data.comments && typeof data.comments === 'object') {
+            const cur = readJSON('cineguide_comments', {});
+            let changed = false;
+            Object.keys(data.comments).forEach(pid => {
+                const have = cur[pid] || [];
+                const key = c => (c && (c.ts || '') + '|' + (c.user || '') + '|' + (c.text || ''));
+                const seen = new Set(have.map(key));
+                const extra = (data.comments[pid] || []).filter(c => c && !seen.has(key(c)));
+                if (extra.length) { cur[pid] = [...have, ...extra]; changed = true; }
+            });
+            if (changed) localStorage.setItem('cineguide_comments', JSON.stringify(cur));
+        }
+        if (data.private) {
+            if (data.private.tmdbKey && !localStorage.getItem('cineguide_tmdb_key')) localStorage.setItem('cineguide_tmdb_key', data.private.tmdbKey);
+            if (data.private.customDomain && !localStorage.getItem('cineguide_custom_domain')) localStorage.setItem('cineguide_custom_domain', data.private.customDomain);
+        }
     }
 
     function isEmptyData(d) {
@@ -131,6 +164,7 @@
         if (!data || typeof data !== 'object') return;
         suppressDirty = !!silent;
         try {
+            restoreExtras(data);
             const save = (key, val) => window.safeSave(key, val);
             const mergeList = (key, incoming) => {
                 if (!Array.isArray(incoming)) return;
@@ -385,6 +419,22 @@
             snapshotNow(local);
             scheduleMirror();
         }
+
+        // bring back visitor comments / API key if this browser lost them (never overwrites)
+        try {
+            const m2 = await idbGet('mirror').catch(() => null);
+            if (m2 && m2.data) restoreExtras(m2.data);
+        } catch (e) {}
+
+        // Demo posts become normal editable/deletable posts (runs after recovery on purpose)
+        try {
+            if (window.CineStore && CineStore.seedDemo() > 0) {
+                scheduleMirror();
+                if (typeof initAllAdminModules === 'function') initAllAdminModules();
+                if (typeof renderAdminPublishedPosts === 'function' && document.getElementById('adminPublishedPostsGrid')) renderAdminPublishedPosts();
+            }
+        } catch (e) { console.warn('Demo seed failed', e); }
+
         renderBanner();
         ensureCard();
     }
