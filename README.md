@@ -35,6 +35,22 @@ core-data/
        match /users/{uid} {
          allow read, write: if request.auth != null && request.auth.uid == uid;
        }
+
+       // CG Rating (সবার রেটিংয়ের গড়)
+       match /cg_ratings/{postId} {
+         allow read: if true;
+         allow create, update: if request.auth != null
+           && request.resource.data.count is int && request.resource.data.sum is int
+           && request.resource.data.count >= 0
+           && request.resource.data.sum >= 0
+           && request.resource.data.sum <= request.resource.data.count * 10;
+         match /votes/{uid} {
+           allow read, delete: if request.auth != null && request.auth.uid == uid;
+           allow create, update: if request.auth != null && request.auth.uid == uid
+             && request.resource.data.value is int
+             && request.resource.data.value >= 1 && request.resource.data.value <= 10;
+         }
+       }
      }
    }
    ```
