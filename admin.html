@@ -19,7 +19,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- ================= ADMIN LOGIN LOCK SCREEN ================= -->
+    <!-- ADMIN LOGIN LOCK SCREEN (Username + Password) -->
     <div id="adminLockScreen" class="fixed inset-0 z-50 bg-[#090a0f] flex items-center justify-center p-4">
         <div class="bg-card border border-subtle rounded-3xl max-w-sm w-full p-7 shadow-2xl text-center">
             <div class="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-500 flex items-center justify-center mx-auto mb-4">
@@ -39,7 +39,7 @@
         </div>
     </div>
 
-    <!-- ================= MAIN ADMIN DASHBOARD ================= -->
+    <!-- MAIN ADMIN DASHBOARD -->
     <div id="adminAppWrapper" class="hidden flex-1 flex flex-col lg:flex-row">
         
         <!-- LEFT SIDEBAR NAVIGATION -->
@@ -55,7 +55,7 @@
                     </a>
                 </div>
 
-                <!-- Navigation Tabs (Added Manage Posts Tab) -->
+                <!-- Navigation Tabs -->
                 <nav class="flex lg:flex-col gap-1.5 overflow-x-auto no-scrollbar">
                     <button onclick="switchAdminTab('posts')" id="navBtn-posts" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Post
@@ -73,7 +73,7 @@
                         <i data-lucide="users" class="w-4 h-4"></i> Users & Comments
                     </button>
                     <button onclick="switchAdminTab('settings')" id="navBtn-settings" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
-                        <i data-lucide="settings" class="w-4 h-4"></i> SEO, Footer & Security
+                        <i data-lucide="settings" class="w-4 h-4"></i> SEO & Security
                     </button>
                 </nav>
             </div>
@@ -140,9 +140,8 @@
             });
             document.getElementById(`navBtn-${tabName}`).className = "admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap";
             
-            // Refresh manage posts list if switching to manage tab
-            if (tabName === 'manage' && typeof renderAdminPublishedPosts === 'function') {
-                renderAdminPublishedPosts();
+            if (tabName === 'manage' && typeof renderManagePostsTab === 'function') {
+                renderManagePostsTab();
             }
             lucide.createIcons();
         }
