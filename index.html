@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script>window.lucide = window.lucide || { createIcons: function () {} };</script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
@@ -104,7 +105,7 @@
                     <button onclick="toggleMenu(true)" class="w-10 h-10 rounded-xl bg-theme-card border border-theme flex items-center justify-center hover:opacity-80 transition" aria-label="Open Menu">
                         <i data-lucide="menu" class="w-5 h-5 text-theme-main"></i>
                     </button>
-                    <a href="#" onclick="switchView('home'); return false;" class="text-xl font-black tracking-wider flex items-center gap-1">
+                    <a href="#" onclick="goHome(); return false;" class="text-xl font-black tracking-wider flex items-center gap-1">
                         <span class="accent-text">CINE</span><span class="text-theme-main">GUIDE</span>
                     </a>
                 </div>
@@ -117,7 +118,7 @@
                     </button>
 
                     <button onclick="handleProfileClick()" class="relative w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-rose-700 text-white font-extrabold text-xs flex items-center justify-center shadow-md hover:opacity-95 transition" title="Account">
-                        <span id="userInitials">IM</span>
+                        <span id="userInitials">G</span>
                         <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-theme rounded-full"></span>
                     </button>
                 </div>
@@ -163,11 +164,11 @@
             <div class="p-3.5 rounded-2xl bg-theme-card border accent-border mb-3 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="relative w-11 h-11 rounded-full accent-bg text-white font-bold text-base flex items-center justify-center">
-                        <span id="drawerUserInitials">IM</span>
+                        <span id="drawerUserInitials">G</span>
                         <span class="w-3 h-3 bg-emerald-500 border-2 border-theme rounded-full absolute bottom-0 right-0"></span>
                     </div>
                     <div>
-                        <h3 id="drawerUserName" class="font-bold text-sm text-theme-main leading-tight">indra mondal</h3>
+                        <h3 id="drawerUserName" class="font-bold text-sm text-theme-main leading-tight">Guest</h3>
                         <button onclick="openAuthModal()" class="text-xs accent-text font-medium hover:underline">Manage account</button>
                     </div>
                 </div>
@@ -357,6 +358,9 @@
                 </div>
             </div>
 
+            <!-- Admin controlled top banner ad -->
+            <div id="adTopSlot" class="hidden mb-5 overflow-hidden flex justify-center"></div>
+
             <!-- MOVIES & SERIES CONTAINER -->
             <div id="moviesGrid" class="grid grid-cols-1 gap-5"></div>
 
@@ -509,12 +513,13 @@
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             <h3 class="text-lg font-extrabold text-theme-main mb-1">Account & Cloud Sync</h3>
-            <p class="text-xs text-theme-muted mb-4">Sign in to sync your watchlist, ratings and comments.</p>
+            <p class="text-xs text-theme-muted mb-4">Save your name to use it on comments. Your data is stored on this device only.</p>
             <form onsubmit="handleSimpleSyncLogin(event)" class="space-y-3">
                 <input type="text" id="authNameInput" required placeholder="Your Name (e.g. indra mondal)" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-main border border-theme text-theme-main text-sm">
                 <input type="email" id="authEmailInput" required placeholder="Email Address" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-main border border-theme text-theme-main text-sm">
                 <button type="submit" class="w-full py-2.5 rounded-xl accent-bg text-white font-bold text-sm">Save Account</button>
             </form>
+            <button id="authSignOutBtn" type="button" onclick="signOut()" class="hidden w-full mt-2.5 py-2.5 rounded-xl border border-theme text-theme-main font-bold text-sm hover:opacity-80">Sign out</button>
         </div>
     </div>
 
@@ -525,11 +530,12 @@
     </div>
 
     <!-- ================= POINT 7, 9 & 15 FIXED: CLEAN FOOTER (NO ADMIN PANEL LINK) ================= -->
+    <div id="adFooterSlot" class="hidden max-w-5xl mx-auto px-4 pt-8 overflow-hidden flex justify-center"></div>
     <footer class="border-t border-theme mt-14 bg-theme-card/80 backdrop-blur-md">
         <div class="max-w-5xl mx-auto px-4 py-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-theme">
                 <div class="text-center sm:text-left">
-                    <a href="#" onclick="switchView('home'); return false;" class="text-lg font-black tracking-wider">
+                    <a href="#" onclick="goHome(); return false;" class="text-lg font-black tracking-wider">
                         <span class="accent-text">CINE</span><span class="text-theme-main">GUIDE</span>
                     </a>
                     <p id="footerTaglineText" class="text-xs text-theme-muted mt-1">
@@ -538,7 +544,7 @@
                 </div>
                 <!-- Admin Panel link removed from Footer as requested in Point 15 -->
                 <div class="flex flex-wrap items-center justify-center gap-5 text-xs font-semibold text-theme-muted">
-                    <button onclick="switchView('home')" class="hover:text-theme-main transition">Home</button>
+                    <button onclick="goHome()" class="hover:text-theme-main transition">Home</button>
                     <button onclick="switchView('upcoming')" class="hover:text-theme-main transition">Upcoming</button>
                     <button onclick="switchView('watchlist')" class="hover:text-theme-main transition">Watchlist</button>
                 </div>
@@ -647,7 +653,7 @@
                     "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1200&q=80",
                     "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80"
                 ],
-                trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                trailerUrl: "",
                 genres: ["Mystery", "Thriller"],
                 tags: ["Korean Movies", "Korean", "2025", "Zero Nudity", "Mystery", "Thriller"],
                 summary: "After the skeletal remains of a long-missing woman are uncovered after 40 years, her son and a documentary producer dig into the chilling secrets buried by their family and town.",
@@ -858,20 +864,111 @@
             }
         };
 
+
+        // --- HELPERS (escape, safe storage, remote data) ---
+        function esc(v) {
+            return String(v === undefined || v === null ? '' : v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function safeParse(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw === null || raw === undefined || raw === '') return fallback;
+                const v = JSON.parse(raw);
+                return v === null || v === undefined ? fallback : v;
+            } catch (e) { return fallback; }
+        }
+        function safeSave(key, val) {
+            try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { console.warn('Storage error', e); }
+        }
+        function safeText(key) {
+            try { return localStorage.getItem(key); } catch (e) { return null; }
+        }
+
+        // Optional file "site-data.json" (exported from Admin panel) so that every visitor sees admin content
+        let siteData = {};
+        async function loadSiteData() {
+            try {
+                const r = await fetch('site-data.json', { cache: 'no-store' });
+                if (r.ok) siteData = await r.json();
+            } catch (e) { /* file is optional */ }
+        }
+        function mergeById(local, remote) {
+            const ids = new Set(local.map(x => x.id));
+            return [...local, ...(Array.isArray(remote) ? remote : []).filter(x => !ids.has(x.id))];
+        }
+        function getCustomReviews() { return mergeById(safeParse('cineguide_custom_reviews', []), siteData.reviews); }
+        function getCustomUpcoming() { return mergeById(safeParse('cineguide_upcoming', []), siteData.upcoming); }
+        function getCustomCategories() {
+            const all = [...safeParse('cineguide_custom_categories', []), ...(siteData.categories || [])];
+            return [...new Set(all)];
+        }
+        function getAdsConfig() {
+            const local = safeParse('cineguide_ads_config', null);
+            const hasLocal = local && (local.topBanner || local.detailBanner || local.footerBanner);
+            return hasLocal ? local : (siteData.ads || {});
+        }
+        function getFooterSetting(name) {
+            return safeText('cineguide_footer_' + name) || (siteData.footer || {})[name] || '';
+        }
+
+        function toEmbedUrl(url) {
+            if (!url) return '';
+            url = String(url).trim();
+            if (url.includes('dQw4w9WgXcQ')) return '';
+            const m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/);
+            if (m) return 'https://www.youtube.com/embed/' + m[1];
+            return /^https?:\/\//.test(url) ? url : '';
+        }
+
+        function normalizeReview(r) {
+            r.tags = Array.isArray(r.tags) ? r.tags : [];
+            r.genres = Array.isArray(r.genres) && r.genres.length ? r.genres : ['Drama'];
+            r.cast = Array.isArray(r.cast) ? r.cast : [];
+            r.episodes = Array.isArray(r.episodes) ? r.episodes : [];
+            r.defaultComments = Array.isArray(r.defaultComments) ? r.defaultComments : [];
+            r.backdrop = r.backdrop || r.poster || '';
+            r.poster = r.poster || r.backdrop || '';
+            r.stills = Array.isArray(r.stills) && r.stills.length ? r.stills : [r.backdrop];
+            r.parentalGuide = Object.assign({ sexNudity: 'None reported.', violence: 'Mild.', profanity: 'Mild.', drugsAlcohol: 'None.' }, r.parentalGuide || {});
+            r.language = r.language || 'English';
+            r.industry = r.industry || '';
+            r.year = String(r.year || '');
+            r.category = r.category || 'Movie';
+            r.rating = r.rating || 'N/A';
+            r.ageRating = r.ageRating || '';
+            r.safetyLevel = r.safetyLevel || 'Safe';
+            r.summary = r.summary || '';
+            r.verdict = r.verdict || '';
+            return r;
+        }
+
+        function findPostBySlug(slug) {
+            return allReviews.find(r => (r.slug && r.slug === slug) || r.id === slug);
+        }
+
+        // Broken image fallback (applies to every <img>)
+        const IMG_FALLBACK = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><rect width="400" height="600" fill="#1b1e2b"/><text x="200" y="305" font-family="Arial" font-size="22" fill="#64748b" text-anchor="middle">No Image</text></svg>');
+        document.addEventListener('error', function (e) {
+            const t = e.target;
+            if (t && t.tagName === 'IMG' && !t.dataset.fb) { t.dataset.fb = '1'; t.src = IMG_FALLBACK; }
+        }, true);
+
         // --- 5. STATE VARIABLES ---
         let allReviews = [];
         let filteredReviews = [];
         let upcomingList = [];
-        let watchlistIds = JSON.parse(localStorage.getItem('cineguide_watchlist') || '[]');
-        let watchedIds = JSON.parse(localStorage.getItem('cineguide_watched') || '[]');
-        let userRatings = JSON.parse(localStorage.getItem('cineguide_user_ratings') || '{}');
-        let notifyUpcomingIds = JSON.parse(localStorage.getItem('cineguide_notify_upcoming') || '[]');
-        let storedViews = JSON.parse(localStorage.getItem('cineguide_views') || '{}');
-        let storedComments = JSON.parse(localStorage.getItem('cineguide_comments') || '{}');
-        let currentUser = JSON.parse(localStorage.getItem('cineguide_user') || 'null');
+        let watchlistIds = safeParse('cineguide_watchlist', []);
+        let watchedIds = safeParse('cineguide_watched', []);
+        let userRatings = safeParse('cineguide_user_ratings', {});
+        let notifyUpcomingIds = safeParse('cineguide_notify_upcoming', []);
+        let storedViews = safeParse('cineguide_views', {});
+        let storedComments = safeParse('cineguide_comments', {});
+        let currentUser = safeParse('cineguide_user', null);
         
         // Point 18 & 19: Layout Mode ('single' or 'grid2')
-        let currentLayoutMode = localStorage.getItem('cineguide_layout_mode') || 'single';
+        let currentLayoutMode = safeText('cineguide_layout_mode') || 'single';
         let currentLibraryTab = 'watchlist';
         let currentDetailItem = null;
         let currentDetailMetaTab = 'story';
@@ -888,7 +985,8 @@
         };
 
         // --- 6. INITIALIZATION ---
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadSiteData();
             loadAdminCustomizations();
             loadReviewsData();
             renderCategoryTabs();
@@ -898,6 +996,8 @@
             updateLayoutToggleButtonsUI();
             renderAllGrids();
             initScrollHideHeader();
+            loadAds();
+            checkReleaseAlerts();
             lucide.createIcons();
 
             // Check if Family Advisory Banner was dismissed in this session
@@ -906,14 +1006,76 @@
                 if (b) b.classList.add('hidden');
             }
 
+            // Open a post directly from its SEO link (?post=slug)
+            const wanted = new URLSearchParams(location.search).get('post');
+            if (wanted) {
+                const it = findPostBySlug(wanted);
+                if (it) openDetailView(it.id, true);
+            }
+
+            window.addEventListener('popstate', () => {
+                const p = new URLSearchParams(location.search).get('post');
+                const it = p ? findPostBySlug(p) : null;
+                if (it) openDetailView(it.id, true); else switchView('home');
+            });
+
             // Live Auto-Refresh for "X mins/hours ago" timestamps every 60 seconds
             setInterval(() => {
                 if (currentDetailItem && !document.getElementById('detailView').classList.contains('hidden')) {
                     const el = document.getElementById('liveTimeAgoText');
                     if (el) el.textContent = formatTimeAgo(currentDetailItem.uploadedAt);
                 }
+                checkReleaseAlerts();
             }, 60000);
         });
+
+        function goHome() {
+            const input = document.getElementById('searchInput');
+            if (input) input.value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            filterByMainCategory('All');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- ADS (code pasted in Admin > Categories & Ads) ---
+        function injectAd(id, html) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.innerHTML = '';
+            if (!html) { el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
+            try { el.appendChild(document.createRange().createContextualFragment(html)); }
+            catch (e) { el.innerHTML = html; }
+        }
+        function loadAds() {
+            const ads = getAdsConfig();
+            injectAd('adTopSlot', ads.topBanner);
+            injectAd('adFooterSlot', ads.footerBanner);
+        }
+
+        // --- RELEASE ALERTS for "Notify Me" ---
+        function checkReleaseAlerts() {
+            const alerted = safeParse('cineguide_alerted', []);
+            let changed = false;
+            notifyUpcomingIds.forEach(id => {
+                const u = upcomingList.find(x => x.id === id);
+                if (!u || alerted.includes(id)) return;
+                const t = Date.parse(u.releaseDate);
+                if (isNaN(t) || t > Date.now()) return;
+                alerted.push(id);
+                changed = true;
+                showToast(`🎬 "${u.title}" is out now!`);
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    try { new Notification('CINEGUIDE', { body: `"${u.title}" has been released!` }); } catch (e) {}
+                }
+            });
+            if (changed) safeSave('cineguide_alerted', alerted);
+        }
+        function isUpcomingActive(u) {
+            const t = Date.parse(u.releaseDate);
+            if (isNaN(t)) return true;
+            return t >= Date.now() - 7 * 24 * 60 * 60 * 1000; // hide 7 days after release
+        }
 
         // Point 13 Fixed: Hide Category Bar on Scroll Down, Show on Scroll Up
         function initScrollHideHeader() {
@@ -940,15 +1102,15 @@
         }
 
         function loadAdminCustomizations() {
-            const savedAccent = localStorage.getItem('cineguide_accent_color');
+            const savedAccent = safeText('cineguide_accent_color');
             if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
             
-            const savedThemeMode = localStorage.getItem('cineguide_theme_mode') || 'dark';
+            const savedThemeMode = safeText('cineguide_theme_mode') || 'dark';
             setThemeMode(savedThemeMode);
 
-            const customCopyright = localStorage.getItem('cineguide_footer_copyright');
-            const customCredit = localStorage.getItem('cineguide_footer_credit');
-            const customTagline = localStorage.getItem('cineguide_footer_tagline');
+            const customCopyright = getFooterSetting('copyright');
+            const customCredit = getFooterSetting('credit');
+            const customTagline = getFooterSetting('tagline');
 
             if (customCopyright) document.getElementById('footerCopyrightText').textContent = customCopyright;
             if (customCredit) document.getElementById('footerCreditText').innerHTML = customCredit;
@@ -956,12 +1118,9 @@
         }
 
         function loadReviewsData() {
-            const customAdminReviews = JSON.parse(localStorage.getItem('cineguide_custom_reviews') || '[]');
-            allReviews = [...customAdminReviews, ...defaultReviews];
+            allReviews = [...getCustomReviews(), ...defaultReviews].map(normalizeReview);
             filteredReviews = [...allReviews];
-
-            const customAdminUpcoming = JSON.parse(localStorage.getItem('cineguide_upcoming') || '[]');
-            upcomingList = [...customAdminUpcoming, ...defaultUpcoming];
+            upcomingList = [...getCustomUpcoming(), ...defaultUpcoming];
         }
 
         // Point 17 Fixed: High-contrast active & inactive states in both Light and Dark mode
@@ -975,17 +1134,17 @@
                 { label: 'Upcoming', value: 'UPCOMING_VIEW' },
                 { label: 'Collections', value: 'Family Safe' }
             ];
-            const customCats = JSON.parse(localStorage.getItem('cineguide_custom_categories') || '[]');
+            const customCats = getCustomCategories();
             const allNavCats = [...defaultMainCats, ...customCats.map(c => ({ label: c, value: c }))];
 
             const nav = document.getElementById('topCategoryNav');
             nav.innerHTML = allNavCats.map(c => {
                 const isActive = currentActiveCategory === c.value;
+                const action = c.value === 'UPCOMING_VIEW' ? "switchView('upcoming')" : "filterByMainCategory(this.dataset.cat)";
                 return `
-                <button onclick="${c.value === 'UPCOMING_VIEW' ? "switchView('upcoming')" : `filterByMainCategory('${c.value}')`}" 
-                    data-cat="${c.value}" 
+                <button onclick="${action}" data-cat="${esc(c.value)}"
                     class="cat-tab pb-2 border-b-2 ${isActive ? 'border-rose-600 text-theme-main font-extrabold' : 'border-transparent text-theme-muted hover:text-theme-main'} whitespace-nowrap transition">
-                    ${c.label}
+                    ${esc(c.label)}
                 </button>`;
             }).join('');
         }
@@ -994,7 +1153,7 @@
         function selectDrawerBrowseCategory(browseKey) {
             activeDrawerBrowseKey = browseKey;
             const config = drawerBrowseMap[browseKey] || drawerBrowseMap['Movies'];
-            const customCats = JSON.parse(localStorage.getItem('cineguide_custom_categories') || '[]');
+            const customCats = getCustomCategories();
 
             // Update 4 Browse Cards Highlight & Chevron Icon
             ['Movies', 'TV Series', 'TV Shows', 'Collections'].forEach(key => {
@@ -1025,8 +1184,8 @@
             const pills = browseKey === 'Movies' ? [...config.pills, ...customCats] : config.pills;
             const container = document.getElementById('drawerCategoriesList');
             container.innerHTML = pills.map(tag => `
-                <button onclick="filterByTag('${tag}')" class="px-3 py-1.5 rounded-xl bg-theme-elevated border border-theme text-theme-main hover:bg-rose-600 hover:text-white hover:border-rose-600 text-xs font-semibold transition">
-                    ${tag}
+                <button data-tag="${esc(tag)}" onclick="filterByTag(this.dataset.tag)" class="px-3 py-1.5 rounded-xl bg-theme-elevated border border-theme text-theme-main hover:bg-rose-600 hover:text-white hover:border-rose-600 text-xs font-semibold transition">
+                    ${esc(tag)}
                 </button>
             `).join('');
 
@@ -1036,7 +1195,7 @@
         // --- POINT 18 & 19 FIXED: GLOBAL LAYOUT TOGGLE (Single Full Post vs 2-Column Side-by-Side) ---
         function toggleLayoutMode() {
             currentLayoutMode = currentLayoutMode === 'single' ? 'grid2' : 'single';
-            localStorage.setItem('cineguide_layout_mode', currentLayoutMode);
+            try { localStorage.setItem('cineguide_layout_mode', currentLayoutMode); } catch (e) {}
             updateLayoutToggleButtonsUI();
             renderAllGrids();
         }
@@ -1081,7 +1240,7 @@
 
         function incrementViewCount(id) {
             storedViews[id] = (storedViews[id] || 0) + 1;
-            localStorage.setItem('cineguide_views', JSON.stringify(storedViews));
+            safeSave('cineguide_views', storedViews);
         }
 
         function getItemComments(item) {
@@ -1122,9 +1281,9 @@
             let safetyBadge = item.safetyLevel === 'Safe' ? 'FAMILY SAFE' : (item.safetyLevel === 'Moderate' ? 'PG-13 GUIDE' : '18+ STRICT');
 
             return `
-            <article onclick="openDetailView('${item.id}')" class="group relative rounded-2xl overflow-hidden bg-theme-card border border-theme cursor-pointer select-none shadow-lg hover:border-rose-500/40 transition">
+            <article onclick="openDetailView('${esc(item.id)}')" class="group relative rounded-2xl overflow-hidden bg-theme-card border border-theme cursor-pointer select-none shadow-lg hover:border-rose-500/40 transition">
                 <div class="relative h-52 sm:h-56 w-full bg-black overflow-hidden">
-                    <img src="${item.backdrop}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-85">
+                    <img src="${esc(item.backdrop)}" alt="${esc(item.title)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-85">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
 
                     <!-- Top Left Live Time Ago Pill -->
@@ -1134,14 +1293,14 @@
 
                     <!-- Top Right Platform Badge -->
                     <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[11px] font-bold uppercase text-white border border-white/15">
-                        ${item.platform || 'HD'}
+                        ${esc(item.platform || 'HD')}
                     </span>
 
                     <!-- Title Overlay -->
                     <div class="absolute inset-x-4 bottom-3">
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-300 block mb-0.5">${item.industry}</span>
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-300 block mb-0.5">${esc(item.industry)}</span>
                         <h3 class="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-md uppercase leading-none">
-                            ${item.title} <span class="text-base font-semibold opacity-75">${item.year}</span>
+                            ${esc(item.title)} <span class="text-base font-semibold opacity-75">${esc(item.year)}</span>
                         </h3>
                     </div>
                 </div>
@@ -1150,19 +1309,19 @@
                 <div class="p-3.5 flex items-center justify-between gap-2 bg-theme-card">
                     <div>
                         <div class="flex items-center gap-2 text-xs font-extrabold text-amber-500">
-                            <span>★ ${item.rating}</span>
+                            <span>★ ${esc(item.rating)}</span>
                             ${myRating ? `<span class="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-500 text-[10px]">Your rating: ${myRating}/10</span>` : ''}
                             <span class="text-theme-muted font-medium">• <i data-lucide="eye" class="w-3.5 h-3.5 inline -mt-0.5"></i> ${totalViews} views</span>
                         </div>
-                        <div class="text-[11px] font-bold text-emerald-500 mt-0.5">${safetyBadge} • ${item.language}</div>
+                        <div class="text-[11px] font-bold text-emerald-500 mt-0.5">${safetyBadge} • ${esc(item.language)}</div>
                     </div>
 
                     <!-- Bookmark & Watched (Star Rating Popup Trigger) Buttons -->
                     <div class="flex items-center gap-2 shrink-0">
-                        <button onclick="event.stopPropagation(); toggleWatchlist('${item.id}')" class="w-10 h-10 rounded-xl ${isBookmarked ? 'bg-[#e0533c] text-white border-[#e0533c]' : 'bg-theme-elevated text-theme-main border-theme'} border flex items-center justify-center transition" title="Add to Watchlist">
+                        <button onclick="event.stopPropagation(); toggleWatchlist('${esc(item.id)}')" class="w-10 h-10 rounded-xl ${isBookmarked ? 'bg-[#e0533c] text-white border-[#e0533c]' : 'bg-theme-elevated text-theme-main border-theme'} border flex items-center justify-center transition" title="Add to Watchlist">
                             <i data-lucide="${isBookmarked ? 'bookmark-check' : 'bookmark'}" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="event.stopPropagation(); openRatingModal('${item.id}')" class="w-10 h-10 rounded-xl ${isWatched ? 'bg-[#e0533c]/20 text-[#e0533c] border-[#e0533c]/50' : 'bg-theme-elevated text-theme-main border-theme'} border flex items-center justify-center transition" title="Mark as Watched & Rate">
+                        <button onclick="event.stopPropagation(); openRatingModal('${esc(item.id)}')" class="w-10 h-10 rounded-xl ${isWatched ? 'bg-[#e0533c]/20 text-[#e0533c] border-[#e0533c]/50' : 'bg-theme-elevated text-theme-main border-theme'} border flex items-center justify-center transition" title="Mark as Watched & Rate">
                             <i data-lucide="${isWatched ? 'check' : 'eye'}" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -1176,26 +1335,26 @@
             const isWatched = watchedIds.includes(item.id);
 
             return `
-            <article onclick="openDetailView('${item.id}')" class="cursor-pointer group select-none">
+            <article onclick="openDetailView('${esc(item.id)}')" class="cursor-pointer group select-none">
                 <div class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2 shadow-md">
-                    <img src="${item.poster || item.backdrop}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    <img src="${item.poster || item.backdrop}" alt="${esc(item.title)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                     
                     <span class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-bold text-white border border-white/10">
-                        ${item.platform || 'HD'}
+                        ${esc(item.platform || 'HD')}
                     </span>
 
                     <div class="absolute bottom-2.5 right-2.5 flex items-center gap-1.5">
-                        <button onclick="event.stopPropagation(); toggleWatchlist('${item.id}')" class="w-8 h-8 rounded-lg ${isBookmarked ? 'bg-[#e0533c] text-white' : 'bg-black/70 text-white'} backdrop-blur-md border border-white/15 flex items-center justify-center">
+                        <button onclick="event.stopPropagation(); toggleWatchlist('${esc(item.id)}')" class="w-8 h-8 rounded-lg ${isBookmarked ? 'bg-[#e0533c] text-white' : 'bg-black/70 text-white'} backdrop-blur-md border border-white/15 flex items-center justify-center">
                             <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button onclick="event.stopPropagation(); openRatingModal('${item.id}')" class="w-8 h-8 rounded-lg ${isWatched ? 'bg-emerald-600 text-white' : 'bg-black/70 text-white'} backdrop-blur-md border border-white/15 flex items-center justify-center">
+                        <button onclick="event.stopPropagation(); openRatingModal('${esc(item.id)}')" class="w-8 h-8 rounded-lg ${isWatched ? 'bg-emerald-600 text-white' : 'bg-black/70 text-white'} backdrop-blur-md border border-white/15 flex items-center justify-center">
                             <i data-lucide="${isWatched ? 'check' : 'eye'}" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 </div>
-                <h3 class="font-extrabold text-sm sm:text-base text-theme-main truncate group-hover:text-rose-500 transition">${item.title}</h3>
-                <p class="text-xs text-theme-muted mt-0.5 font-medium">★ ${item.rating} &nbsp;•&nbsp; ${item.year} &nbsp;•&nbsp; ${item.category}</p>
+                <h3 class="font-extrabold text-sm sm:text-base text-theme-main truncate group-hover:text-rose-500 transition">${esc(item.title)}</h3>
+                <p class="text-xs text-theme-muted mt-0.5 font-medium">★ ${esc(item.rating)} &nbsp;•&nbsp; ${esc(item.year)} &nbsp;•&nbsp; ${esc(item.category)}</p>
             </article>`;
         }
 
@@ -1210,7 +1369,17 @@
             if (homeUp) homeUp.className = gridClass;
             if (fullUp) fullUp.className = gridClass;
 
-            const html = upcomingList.map(u => {
+            const visible = upcomingList.filter(isUpcomingActive);
+            const html = visible.length
+                ? visible.map(u => createUpcomingCardHTML(u, isGrid2)).join('')
+                : `<p class="text-xs text-theme-muted col-span-full">No upcoming releases right now. Check back soon!</p>`;
+
+            if (homeUp) homeUp.innerHTML = html;
+            if (fullUp) fullUp.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function createUpcomingCardHTML(u, isGrid2) {
                 const inWatchlist = watchlistIds.includes(u.id);
                 const isNotified = notifyUpcomingIds.includes(u.id);
 
@@ -1218,23 +1387,23 @@
                     return `
                     <div class="group">
                         <div class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2 shadow-md">
-                            <img src="${u.poster || u.backdrop}" alt="${u.title}" class="w-full h-full object-cover">
+                            <img src="${u.poster || u.backdrop}" alt="${esc(u.title)}" class="w-full h-full object-cover">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
-                            <span class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded bg-amber-500 text-black text-[10px] font-extrabold uppercase">${u.type}</span>
+                            <span class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded bg-amber-500 text-black text-[10px] font-extrabold uppercase">${esc(u.type)}</span>
                             <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                                <span class="text-[10px] font-bold text-amber-300">${u.releaseDate}</span>
+                                <span class="text-[10px] font-bold text-amber-300">${esc(u.releaseDate)}</span>
                                 <div class="flex gap-1">
-                                    <button onclick="toggleUpcomingWatchlist('${u.id}', '${u.title}')" class="w-7 h-7 rounded-lg ${inWatchlist ? 'bg-[#e0533c] text-white' : 'bg-black/75 text-white'} flex items-center justify-center border border-white/15">
+                                    <button onclick="toggleUpcomingWatchlist('${esc(u.id)}')" class="w-7 h-7 rounded-lg ${inWatchlist ? 'bg-[#e0533c] text-white' : 'bg-black/75 text-white'} flex items-center justify-center border border-white/15">
                                         <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
                                     </button>
-                                    <button onclick="toggleUpcomingNotify('${u.id}', '${u.title}')" class="w-7 h-7 rounded-lg ${isNotified ? 'bg-amber-500 text-black' : 'bg-black/75 text-white'} flex items-center justify-center border border-white/15">
+                                    <button onclick="toggleUpcomingNotify('${esc(u.id)}')" class="w-7 h-7 rounded-lg ${isNotified ? 'bg-amber-500 text-black' : 'bg-black/75 text-white'} flex items-center justify-center border border-white/15">
                                         <i data-lucide="bell" class="w-3.5 h-3.5"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <h3 class="font-extrabold text-sm text-theme-main truncate">${u.title}</h3>
-                        <p class="text-xs text-theme-muted mt-0.5">${u.releaseWhere} • ${u.expectedSafety}</p>
+                        <h3 class="font-extrabold text-sm text-theme-main truncate">${esc(u.title)}</h3>
+                        <p class="text-xs text-theme-muted mt-0.5">${esc(u.releaseWhere)} • ${esc(u.expectedSafety)}</p>
                     </div>`;
                 }
 
@@ -1243,44 +1412,41 @@
                 <div class="rounded-2xl overflow-hidden bg-theme-card border border-theme p-4 flex flex-col justify-between shadow-md hover:border-amber-500/50 transition">
                     <div>
                         <div class="relative h-44 rounded-xl overflow-hidden bg-black mb-3.5">
-                            <img src="${u.backdrop}" alt="${u.title}" class="w-full h-full object-cover opacity-90">
-                            <span class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/80 text-[10px] font-extrabold text-amber-400 border border-amber-400/30 uppercase">${u.type}</span>
+                            <img src="${esc(u.backdrop)}" alt="${esc(u.title)}" class="w-full h-full object-cover opacity-90">
+                            <span class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/80 text-[10px] font-extrabold text-amber-400 border border-amber-400/30 uppercase">${esc(u.type)}</span>
                         </div>
                         <div class="flex items-center gap-1.5 text-xs font-bold text-amber-500 mb-1">
-                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${u.releaseDate}
+                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${esc(u.releaseDate)}
                         </div>
-                        <h3 class="font-extrabold text-lg text-theme-main">${u.title}</h3>
-                        <p class="text-xs text-theme-muted mt-1 mb-3">${u.note}</p>
+                        <h3 class="font-extrabold text-lg text-theme-main">${esc(u.title)}</h3>
+                        <p class="text-xs text-theme-muted mt-1 mb-3">${esc(u.note)}</p>
                     </div>
 
                     <div class="pt-3 border-t border-theme flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <!-- Point 17 Fixed: High-contrast badge in both Light & Dark Mode -->
-                            <span class="px-2.5 py-1 rounded-lg bg-theme-elevated border border-theme text-theme-main text-[11px] font-bold">${u.releaseWhere}</span>
-                            <span class="text-emerald-500 text-xs font-extrabold">${u.expectedSafety}</span>
+                            <span class="px-2.5 py-1 rounded-lg bg-theme-elevated border border-theme text-theme-main text-[11px] font-bold">${esc(u.releaseWhere)}</span>
+                            <span class="text-emerald-500 text-xs font-extrabold">${esc(u.expectedSafety)}</span>
                         </div>
 
                         <!-- Point 20 Fixed: Upcoming Watchlist + Release Alert Notification Buttons -->
                         <div class="flex items-center gap-2">
-                            <button onclick="toggleUpcomingWatchlist('${u.id}', '${u.title}')" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${inWatchlist ? 'bg-[#e0533c] text-white border-[#e0533c]' : 'bg-theme-elevated border-theme text-theme-main hover:border-rose-500/40'}">
+                            <button onclick="toggleUpcomingWatchlist('${esc(u.id)}')" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${inWatchlist ? 'bg-[#e0533c] text-white border-[#e0533c]' : 'bg-theme-elevated border-theme text-theme-main hover:border-rose-500/40'}">
                                 <i data-lucide="${inWatchlist ? 'bookmark-check' : 'bookmark'}" class="w-3.5 h-3.5"></i>
                                 <span>${inWatchlist ? 'Saved' : 'Watchlist'}</span>
                             </button>
-                            <button onclick="toggleUpcomingNotify('${u.id}', '${u.title}')" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${isNotified ? 'bg-amber-500 text-black border-amber-500' : 'bg-theme-elevated border-theme text-theme-main hover:border-amber-500/40'}">
+                            <button onclick="toggleUpcomingNotify('${esc(u.id)}')" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${isNotified ? 'bg-amber-500 text-black border-amber-500' : 'bg-theme-elevated border-theme text-theme-main hover:border-amber-500/40'}">
                                 <i data-lucide="${isNotified ? 'bell-ring' : 'bell'}" class="w-3.5 h-3.5"></i>
                                 <span>${isNotified ? 'Alert On' : 'Notify Me'}</span>
                             </button>
                         </div>
                     </div>
                 </div>`;
-            }).join('');
-
-            if (homeUp) homeUp.innerHTML = html;
-            if (fullUp) fullUp.innerHTML = html;
-            lucide.createIcons();
         }
 
-        function toggleUpcomingWatchlist(id, title) {
+        function toggleUpcomingWatchlist(id) {
+            const u = upcomingList.find(x => x.id === id);
+            const title = u ? u.title : 'Title';
             if (watchlistIds.includes(id)) {
                 watchlistIds = watchlistIds.filter(i => i !== id);
                 showToast(`Removed "${title}" from Watchlist`);
@@ -1288,29 +1454,33 @@
                 watchlistIds.push(id);
                 showToast(`Added "${title}" to Watchlist! You'll be notified on release.`);
             }
-            localStorage.setItem('cineguide_watchlist', JSON.stringify(watchlistIds));
+            safeSave('cineguide_watchlist', watchlistIds);
             updateWatchlistCounters();
-            renderUpcomingGrids();
+            renderAllGrids();
         }
 
-        function toggleUpcomingNotify(id, title) {
+        function toggleUpcomingNotify(id) {
+            const u = upcomingList.find(x => x.id === id);
+            const title = u ? u.title : 'Title';
             if ("Notification" in window && Notification.permission === "default") {
-                Notification.requestPermission();
+                try { Notification.requestPermission(); } catch (e) {}
             }
             if (notifyUpcomingIds.includes(id)) {
                 notifyUpcomingIds = notifyUpcomingIds.filter(i => i !== id);
                 showToast(`Release alert turned off for "${title}"`);
             } else {
                 notifyUpcomingIds.push(id);
+                safeSave('cineguide_alerted', safeParse('cineguide_alerted', []).filter(x => x !== id));
                 if (!watchlistIds.includes(id)) {
                     watchlistIds.push(id);
-                    localStorage.setItem('cineguide_watchlist', JSON.stringify(watchlistIds));
+                    safeSave('cineguide_watchlist', watchlistIds);
                     updateWatchlistCounters();
                 }
                 showToast(`🔔 Release notification enabled for "${title}"!`);
+                checkReleaseAlerts();
             }
-            localStorage.setItem('cineguide_notify_upcoming', JSON.stringify(notifyUpcomingIds));
-            renderUpcomingGrids();
+            safeSave('cineguide_notify_upcoming', notifyUpcomingIds);
+            renderAllGrids();
         }
 
         function showToast(msg) {
@@ -1331,7 +1501,7 @@
             ratingTargetId = id;
             selectedStarsCount = userRatings[id] || 0;
 
-            document.getElementById('ratingModalTitle').innerHTML = `${item.title} <span class="font-normal text-gray-400">${item.year}</span>`;
+            document.getElementById('ratingModalTitle').innerHTML = `${esc(item.title)} <span class="font-normal text-gray-400">${esc(item.year)}</span>`;
             renderTenStarsUI();
 
             const modal = document.getElementById('ratingModal');
@@ -1375,13 +1545,14 @@
 
         function saveUserStarRating() {
             if (!ratingTargetId) return;
+            if (selectedStarsCount === 0) { showToast('Pick a star rating first (1 to 10)'); return; }
             if (selectedStarsCount > 0) {
                 userRatings[ratingTargetId] = selectedStarsCount;
-                localStorage.setItem('cineguide_user_ratings', JSON.stringify(userRatings));
+                safeSave('cineguide_user_ratings', userRatings);
             }
             if (!watchedIds.includes(ratingTargetId)) {
                 watchedIds.push(ratingTargetId);
-                localStorage.setItem('cineguide_watched', JSON.stringify(watchedIds));
+                safeSave('cineguide_watched', watchedIds);
             }
             updateWatchlistCounters();
             closeRatingModal();
@@ -1394,7 +1565,7 @@
             if (!ratingTargetId) return;
             if (!watchedIds.includes(ratingTargetId)) {
                 watchedIds.push(ratingTargetId);
-                localStorage.setItem('cineguide_watched', JSON.stringify(watchedIds));
+                safeSave('cineguide_watched', watchedIds);
             }
             updateWatchlistCounters();
             closeRatingModal();
@@ -1406,8 +1577,8 @@
             if (!ratingTargetId) return;
             watchedIds = watchedIds.filter(i => i !== ratingTargetId);
             delete userRatings[ratingTargetId];
-            localStorage.setItem('cineguide_watched', JSON.stringify(watchedIds));
-            localStorage.setItem('cineguide_user_ratings', JSON.stringify(userRatings));
+            safeSave('cineguide_watched', watchedIds);
+            safeSave('cineguide_user_ratings', userRatings);
             updateWatchlistCounters();
             closeRatingModal();
             renderAllGrids();
@@ -1425,7 +1596,7 @@
         }
 
         // --- 10. POST DETAIL VIEW (With Story | Cast | Release | Tags Tabs from Video 1 + Fixed Bottom-Left Comment Button) ---
-        function openDetailView(id) {
+        function openDetailView(id, skipHistory) {
             const item = allReviews.find(r => r.id === id);
             if (!item) return;
 
@@ -1437,6 +1608,26 @@
             renderDetailContent();
             switchView('detail');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            document.title = `${item.title} (${item.year}) — CINEGUIDE`;
+            if (!skipHistory) {
+                try {
+                    const url = new URL(location.href);
+                    url.searchParams.set('post', item.slug || item.id);
+                    history.pushState({ post: item.slug || item.id }, '', url);
+                } catch (e) { /* file:// or sandbox */ }
+            }
+        }
+
+        function clearPostUrl() {
+            document.title = 'CINEGUIDE — Movie, Series & Anime Reviews + Parental Guide';
+            try {
+                const url = new URL(location.href);
+                if (url.searchParams.has('post')) {
+                    url.searchParams.delete('post');
+                    history.replaceState({}, '', url);
+                }
+            } catch (e) {}
         }
 
         function switchDetailMetaTab(tab) {
@@ -1490,9 +1681,9 @@
 
                     <div class="absolute bottom-4 left-4 right-4">
                         <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white">
-                            ${item.title} <span class="font-normal text-gray-300">${item.year}</span>
+                            ${esc(item.title)} <span class="font-normal text-gray-300">${esc(item.year)}</span>
                         </h1>
-                        <p class="text-sm italic text-gray-300 mt-1">${item.tagline || ''}</p>
+                        <p class="text-sm italic text-gray-300 mt-1">${esc(item.tagline || '')}</p>
                     </div>
                 </div>
 
@@ -1501,22 +1692,22 @@
                     <div class="flex gap-5 items-start mb-7">
                         <!-- Poster Image -->
                         <div class="w-32 sm:w-40 shrink-0 rounded-2xl overflow-hidden border border-theme shadow-2xl bg-theme-card">
-                            <img src="${item.poster}" alt="${item.title}" class="w-full h-48 sm:h-56 object-cover">
+                            <img src="${esc(item.poster)}" alt="${esc(item.title)}" class="w-full h-48 sm:h-56 object-cover">
                         </div>
 
                         <!-- Right Metadata Pills & Dynamic Time/Views -->
                         <div class="flex-1 pt-1">
                             <div class="flex flex-wrap gap-2 mb-2.5">
-                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-theme-main text-xs font-bold">${item.ageRating}</span>
-                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-theme-main text-xs font-bold">${item.duration || '1h 50m'}</span>
-                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-theme-main text-xs font-bold">${item.platform || 'HD'}</span>
+                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-theme-main text-xs font-bold">${esc(item.ageRating)}</span>
+                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-theme-main text-xs font-bold">${esc(item.duration || '1h 50m')}</span>
+                                <span class="px-3 py-1 rounded-full bg-theme-card border border-theme text-theme-main text-xs font-bold">${esc(item.platform || 'HD')}</span>
                             </div>
 
                             <div class="inline-block px-3.5 py-1.5 rounded-full bg-theme-card border border-theme text-theme-main text-xs font-semibold mb-3">
-                                ${item.genres.join(' · ')}
+                                ${esc(item.genres.join(' · '))}
                             </div>
 
-                            <p class="text-xs font-bold tracking-wider uppercase text-theme-muted mb-2">${item.breadcrumb || 'MOVIES'}</p>
+                            <p class="text-xs font-bold tracking-wider uppercase text-theme-muted mb-2">${esc(item.breadcrumb || 'MOVIES')}</p>
 
                             <div class="flex flex-wrap items-center gap-3.5 text-xs text-theme-muted">
                                 <span class="flex items-center gap-1">
@@ -1541,7 +1732,7 @@
                                 <i data-lucide="shield-check" class="w-5 h-5"></i> Parental Guide & Safety Verdict
                             </span>
                             <span class="px-3 py-1 rounded-xl bg-black/25 text-xs font-extrabold uppercase">
-                                ${item.safetyLevel}
+                                ${esc(item.safetyLevel)}
                             </span>
                         </button>
 
@@ -1551,7 +1742,7 @@
                             </button>
                             <div class="col-span-5 py-3 rounded-2xl bg-theme-card border border-theme text-theme-main font-bold text-xs sm:text-sm flex items-center justify-center gap-2">
                                 <span class="px-1.5 py-0.5 rounded bg-amber-400 text-black text-[11px] font-black">IMDb</span>
-                                <span>★ ${item.rating}</span>
+                                <span>★ ${esc(item.rating)}</span>
                             </div>
                             <a href="https://www.google.com/search?q=${encodeURIComponent(item.title + ' ' + item.year)}" target="_blank" class="col-span-2 py-3 rounded-2xl bg-theme-card border border-theme flex items-center justify-center font-extrabold text-sm text-blue-500">
                                 G
@@ -1559,10 +1750,10 @@
                         </div>
 
                         <div class="grid grid-cols-2 gap-2.5">
-                            <button onclick="toggleWatchlist('${item.id}'); renderDetailContent();" class="py-3 rounded-2xl bg-theme-card border ${isBookmarked ? 'accent-border accent-text font-bold' : 'border-theme text-theme-main'} font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
+                            <button onclick="toggleWatchlist('${esc(item.id)}'); renderDetailContent();" class="py-3 rounded-2xl bg-theme-card border ${isBookmarked ? 'accent-border accent-text font-bold' : 'border-theme text-theme-main'} font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
                                 <i data-lucide="bookmark" class="w-4 h-4"></i> ${isBookmarked ? 'In Watchlist' : 'Watchlist'}
                             </button>
-                            <button onclick="openRatingModal('${item.id}')" class="py-3 rounded-2xl bg-theme-card border ${isWatched ? 'border-emerald-500/60 text-emerald-500 font-bold' : 'border-theme text-theme-main'} font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
+                            <button onclick="openRatingModal('${esc(item.id)}')" class="py-3 rounded-2xl bg-theme-card border ${isWatched ? 'border-emerald-500/60 text-emerald-500 font-bold' : 'border-theme text-theme-main'} font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
                                 <i data-lucide="${isWatched ? 'check' : 'eye'}" class="w-4 h-4"></i> ${isWatched ? `Watched ${myRating ? `(${myRating}★)` : '✓'}` : 'Watched'}
                             </button>
                         </div>
@@ -1571,7 +1762,7 @@
                     <!-- HIDDEN TRAILER EMBED BOX -->
                     <div id="trailerBox" class="hidden mb-7">
                         <div class="aspect-video rounded-2xl overflow-hidden bg-black border border-theme">
-                            <iframe src="${item.trailerUrl}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+                            <iframe data-src="${esc(toEmbedUrl(item.trailerUrl))}" class="w-full h-full" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
                         </div>
                     </div>
 
@@ -1585,22 +1776,22 @@
                         </div>
 
                         ${currentDetailMetaTab === 'story' ? `
-                            <p class="text-xs sm:text-sm text-theme-main leading-relaxed">${item.summary}</p>
+                            <p class="text-xs sm:text-sm text-theme-main leading-relaxed">${esc(item.summary)}</p>
                         ` : ''}
 
                         ${currentDetailMetaTab === 'cast' ? `
                             <div class="space-y-3 text-xs sm:text-sm">
                                 <div>
                                     <span class="text-[10px] font-bold uppercase tracking-wider text-theme-muted block">DIRECTOR</span>
-                                    <span class="font-semibold text-theme-main">${item.director || 'Featured Director'}</span>
+                                    <span class="font-semibold text-theme-main">${esc(item.director || 'Featured Director')}</span>
                                 </div>
                                 <div>
                                     <span class="text-[10px] font-bold uppercase tracking-wider text-theme-muted block">WRITERS</span>
-                                    <span class="font-semibold text-theme-main">${item.writers || 'Original Screenplay'}</span>
+                                    <span class="font-semibold text-theme-main">${esc(item.writers || 'Original Screenplay')}</span>
                                 </div>
                                 <div>
                                     <span class="text-[10px] font-bold uppercase tracking-wider text-theme-muted block">CAST</span>
-                                    <span class="font-semibold text-theme-main">${item.cast.map(c => c.name).join(', ')}</span>
+                                    <span class="font-semibold text-theme-main">${esc(item.cast.map(c => c.name).join(', ') || 'Not listed')}</span>
                                 </div>
                             </div>
                         ` : ''}
@@ -1609,24 +1800,24 @@
                             <div class="space-y-3 text-xs sm:text-sm">
                                 <div>
                                     <span class="text-[10px] font-bold uppercase tracking-wider text-theme-muted block">RELEASED</span>
-                                    <span class="font-semibold text-theme-main">${item.releaseFullDate || item.year}</span>
+                                    <span class="font-semibold text-theme-main">${esc(item.releaseFullDate || item.year)}</span>
                                 </div>
                                 <div>
                                     <span class="text-[10px] font-bold uppercase tracking-wider text-theme-muted block">COUNTRY & LANGUAGE</span>
-                                    <span class="font-semibold text-theme-main">${item.country || 'International'} • ${item.language}</span>
+                                    <span class="font-semibold text-theme-main">${esc(item.country || 'International')} • ${esc(item.language)}</span>
                                 </div>
                             </div>
                         ` : ''}
 
                         ${currentDetailMetaTab === 'tags' ? `
                             <div class="flex flex-wrap gap-2">
-                                ${item.tags.map(t => `<button onclick="filterByTag('${t}')" class="px-3 py-1.5 rounded-xl bg-theme-elevated text-theme-main text-xs font-semibold hover:bg-rose-600 hover:text-white transition">${t}</button>`).join('')}
+                                ${item.tags.map(t => `<button data-tag="${esc(t)}" onclick="filterByTag(this.dataset.tag)" class="px-3 py-1.5 rounded-xl bg-theme-elevated text-theme-main text-xs font-semibold hover:bg-rose-600 hover:text-white transition">${esc(t)}</button>`).join('')}
                             </div>
                         ` : ''}
                     </div>
 
                     <!-- POINT 6 FIXED: ACTORS / CAST SECTION (ONLY Square/Portrait Cards) -->
-                    <div class="mb-8">
+                    <div class="mb-8 ${item.cast.length ? '' : 'hidden'}">
                         <div class="flex items-center justify-between mb-3">
                             <h2 class="text-lg font-extrabold text-theme-main">Actors</h2>
                             <span class="text-xs text-theme-muted">Tap any actor for biography & filmography</span>
@@ -1634,16 +1825,34 @@
 
                         <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
                             ${item.cast.map(c => `
-                                <div onclick="openActorProfile('${c.actorId}')" class="w-36 sm:w-44 shrink-0 cursor-pointer group">
+                                <div onclick="openCastMember(${item.cast.indexOf(c)})" class="w-36 sm:w-44 shrink-0 cursor-pointer group">
                                     <div class="h-44 sm:h-52 rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2.5 shadow-md">
-                                        <img src="${c.photo}" alt="${c.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                        <img src="${esc(c.photo)}" alt="${esc(c.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                                     </div>
-                                    <h4 class="font-extrabold text-sm text-theme-main truncate group-hover:text-rose-500">${c.name}</h4>
-                                    <p class="text-xs text-theme-muted truncate">${c.character}</p>
+                                    <h4 class="font-extrabold text-sm text-theme-main truncate group-hover:text-rose-500">${esc(c.name)}</h4>
+                                    <p class="text-xs text-theme-muted truncate">${esc(c.character)}</p>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
+
+                    ${item.episodes.length ? `
+                    <div class="mb-8">
+                        <h2 class="text-lg font-extrabold text-theme-main mb-3">Episodes <span class="text-xs font-medium text-theme-muted">${item.episodes.length}</span></h2>
+                        <div class="space-y-2.5">
+                            ${item.episodes.map(ep => `
+                                <div class="flex gap-3 p-2.5 rounded-2xl bg-theme-card border border-theme">
+                                    <img src="${esc(ep.thumb)}" alt="" class="w-28 h-16 sm:w-36 sm:h-20 object-cover rounded-xl shrink-0 bg-black">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <h4 class="font-bold text-sm text-theme-main truncate">${esc(ep.title)}</h4>
+                                            <span class="text-xs font-bold text-amber-500 shrink-0">★ ${esc(ep.rating)}</span>
+                                        </div>
+                                        <p class="text-xs text-theme-muted mt-1 line-clamp-2">${esc(ep.desc)}</p>
+                                    </div>
+                                </div>`).join('')}
+                        </div>
+                    </div>` : ''}
 
                     <!-- PARENTAL GUIDANCE & STORY REVIEW SECTION -->
                     <div id="parentalSection" class="p-5 rounded-2xl bg-theme-card border border-theme mb-8">
@@ -1654,42 +1863,44 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                             <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
                                 <span class="font-bold text-rose-500 block mb-1">Sex & Nudity</span>
-                                <p class="text-theme-muted">${item.parentalGuide.sexNudity}</p>
+                                <p class="text-theme-muted">${esc(item.parentalGuide.sexNudity)}</p>
                             </div>
                             <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
                                 <span class="font-bold text-amber-500 block mb-1">Violence & Gore</span>
-                                <p class="text-theme-muted">${item.parentalGuide.violence}</p>
+                                <p class="text-theme-muted">${esc(item.parentalGuide.violence)}</p>
                             </div>
                             <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
                                 <span class="font-bold text-purple-500 block mb-1">Profanity & Language</span>
-                                <p class="text-theme-muted">${item.parentalGuide.profanity}</p>
+                                <p class="text-theme-muted">${esc(item.parentalGuide.profanity)}</p>
                             </div>
                             <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
                                 <span class="font-bold text-blue-500 block mb-1">Drugs, Alcohol & Smoking</span>
-                                <p class="text-theme-muted">${item.parentalGuide.drugsAlcohol}</p>
+                                <p class="text-theme-muted">${esc(item.parentalGuide.drugsAlcohol)}</p>
                             </div>
                         </div>
 
                         <div class="mt-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs">
                             <span class="font-bold text-emerald-500 block mb-0.5">Final Family Verdict:</span>
-                            <span class="text-theme-main font-medium">${item.verdict}</span>
+                            <span class="text-theme-main font-medium">${esc(item.verdict)}</span>
                         </div>
                     </div>
+
+                    <div id="adDetailSlot" class="hidden mb-8 overflow-hidden flex justify-center"></div>
 
                     <!-- KEEP BINGING SECTION -->
                     <div>
                         <h2 class="text-lg font-extrabold text-theme-main mb-3">Keep Binging</h2>
                         <div class="grid grid-cols-2 gap-3.5">
                             ${relatedItems.slice(0, 4).map(rel => `
-                                <div onclick="openDetailView('${rel.id}')" class="cursor-pointer group">
+                                <div onclick="openDetailView('${esc(rel.id)}')" class="cursor-pointer group">
                                     <div class="relative h-28 sm:h-36 rounded-2xl overflow-hidden bg-theme-card border border-theme mb-1.5">
-                                        <img src="${rel.backdrop}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                                        <img src="${esc(rel.backdrop)}" class="w-full h-full object-cover group-hover:scale-105 transition">
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                                        <span class="absolute bottom-2 left-2.5 text-sm font-black text-white uppercase">${rel.title}</span>
+                                        <span class="absolute bottom-2 left-2.5 text-sm font-black text-white uppercase">${esc(rel.title)}</span>
                                     </div>
                                     <div class="flex items-center gap-2 text-[11px] text-theme-muted">
-                                        <span class="px-1.5 py-0.5 rounded bg-theme-card border border-theme text-amber-500 font-bold">★ ${rel.rating}</span>
-                                        <span>${rel.year} • ${rel.category.toUpperCase()}</span>
+                                        <span class="px-1.5 py-0.5 rounded bg-theme-card border border-theme text-amber-500 font-bold">★ ${esc(rel.rating)}</span>
+                                        <span>${esc(rel.year)} • ${esc(rel.category.toUpperCase())}</span>
                                     </div>
                                 </div>
                             `).join('')}
@@ -1697,11 +1908,20 @@
                     </div>
                 </div>
             `;
+            injectAd('adDetailSlot', getAdsConfig().detailBanner);
             lucide.createIcons();
         }
 
         function toggleTrailerModal() {
-            document.getElementById('trailerBox').classList.toggle('hidden');
+            const box = document.getElementById('trailerBox');
+            if (!box) return;
+            const frame = box.querySelector('iframe');
+            const src = frame ? frame.dataset.src : '';
+            if (!src) { showToast('Trailer is not available for this title yet'); return; }
+            const opening = box.classList.contains('hidden');
+            box.classList.toggle('hidden');
+            frame.src = opening ? src : 'about:blank';
+            if (opening) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         // --- 11. COMMENTS MODAL FUNCTIONS ---
@@ -1730,10 +1950,10 @@
             listEl.innerHTML = comments.map(c => `
                 <div class="p-3 rounded-xl bg-theme-main border border-theme text-xs">
                     <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-theme-main">${c.user}</span>
-                        <span class="text-[10px] text-theme-muted">${c.time}</span>
+                        <span class="font-bold text-theme-main">${esc(c.user)}</span>
+                        <span class="text-[10px] text-theme-muted">${esc(c.ts ? formatTimeAgo(c.ts) : c.time)}</span>
                     </div>
-                    <p class="text-theme-muted leading-relaxed">${c.text}</p>
+                    <p class="text-theme-muted leading-relaxed">${esc(c.text)}</p>
                 </div>
             `).join('');
         }
@@ -1742,7 +1962,7 @@
             e.preventDefault();
             if (!currentDetailItem) return;
             const input = document.getElementById('newCommentInput');
-            const text = input.value.trim();
+            const text = input.value.trim().slice(0, 500);
             if (!text) return;
 
             const userName = currentUser ? currentUser.name : "Guest Viewer";
@@ -1750,9 +1970,10 @@
             storedComments[currentDetailItem.id].unshift({
                 user: userName,
                 text: text,
-                time: "Just now"
+                time: "Just now",
+                ts: Date.now()
             });
-            localStorage.setItem('cineguide_comments', JSON.stringify(storedComments));
+            safeSave('cineguide_comments', storedComments);
             input.value = '';
             renderCommentsList();
 
@@ -1767,6 +1988,24 @@
         function openActorProfile(actorId) {
             const actor = actorsDB[actorId];
             if (!actor) return;
+            currentActorObj = actor;
+            currentActorTab = 'movies';
+            renderActorView();
+            switchView('actor');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openCastMember(idx) {
+            const c = currentDetailItem && currentDetailItem.cast[idx];
+            if (!c) return;
+            let actor = actorsDB[c.actorId];
+            if (!actor || actor.name !== c.name) {
+                actor = {
+                    id: 'cast-' + idx, name: c.name, roleType: 'Acting', born: 'Not available', birthplace: 'Not available',
+                    photo: c.photo || '', bio: `${c.name} appears as ${c.character || 'a cast member'} in ${currentDetailItem.title}.`,
+                    movies: [], series: []
+                };
+            }
             currentActorObj = actor;
             currentActorTab = 'movies';
             renderActorView();
@@ -1791,13 +2030,13 @@
 
                 <div class="max-w-md mx-auto text-center mb-8">
                     <div class="w-44 h-56 mx-auto rounded-3xl overflow-hidden border border-theme shadow-2xl mb-4 bg-theme-card">
-                        <img src="${actor.photo}" alt="${actor.name}" class="w-full h-full object-cover">
+                        <img src="${esc(actor.photo)}" alt="${esc(actor.name)}" class="w-full h-full object-cover">
                     </div>
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-theme-main mb-2">${actor.name}</h1>
-                    <p class="text-xs text-theme-muted mb-1">${actor.roleType} &nbsp;•&nbsp; Born ${actor.born}</p>
-                    <p class="text-xs text-theme-muted mb-4">• ${actor.birthplace}</p>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-theme-main mb-2">${esc(actor.name)}</h1>
+                    <p class="text-xs text-theme-muted mb-1">${esc(actor.roleType)} &nbsp;•&nbsp; Born ${esc(actor.born)}</p>
+                    <p class="text-xs text-theme-muted mb-4">• ${esc(actor.birthplace)}</p>
 
-                    <p id="actorBioText" class="text-xs sm:text-sm text-theme-muted leading-relaxed line-clamp-4">${actor.bio}</p>
+                    <p id="actorBioText" class="text-xs sm:text-sm text-theme-muted leading-relaxed line-clamp-4">${esc(actor.bio)}</p>
                     <button onclick="document.getElementById('actorBioText').classList.toggle('line-clamp-4')" class="text-xs font-bold accent-text mt-2 hover:underline">Read more</button>
                 </div>
 
@@ -1813,13 +2052,13 @@
                 </div>
 
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    ${list.map(work => `
+                    ${list.length === 0 ? '<p class="col-span-full text-xs text-theme-muted">No titles listed yet.</p>' : ''}${list.map(work => `
                         <div onclick="${work.linkedReviewId ? `openDetailView('${work.linkedReviewId}')` : ''}" class="cursor-pointer group">
                             <div class="aspect-[2/3] rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2">
-                                <img src="${work.poster}" alt="${work.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                <img src="${esc(work.poster)}" alt="${esc(work.title)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                             </div>
-                            <h4 class="font-bold text-sm text-theme-main truncate group-hover:text-rose-500">${work.title}</h4>
-                            <p class="text-xs text-theme-muted mt-0.5">★ ${work.rating} &nbsp;•&nbsp; ${work.year} &nbsp;•&nbsp; ${work.type}</p>
+                            <h4 class="font-bold text-sm text-theme-main truncate group-hover:text-rose-500">${esc(work.title)}</h4>
+                            <p class="text-xs text-theme-muted mt-0.5">★ ${esc(work.rating)} &nbsp;•&nbsp; ${esc(work.year)} &nbsp;•&nbsp; ${esc(work.type)}</p>
                         </div>
                     `).join('')}
                 </div>
@@ -1836,7 +2075,7 @@
                 watchlistIds.push(id);
                 showToast("Added to Watchlist");
             }
-            localStorage.setItem('cineguide_watchlist', JSON.stringify(watchlistIds));
+            safeSave('cineguide_watchlist', watchlistIds);
             updateWatchlistCounters();
             renderAllGrids();
         }
@@ -1869,7 +2108,8 @@
                 empty.classList.add('hidden');
                 grid.className = currentLayoutMode === 'grid2' ? "grid grid-cols-2 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-5";
                 const revHtml = matchedReviews.map(i => currentLayoutMode === 'grid2' ? createPortraitCardHTML(i) : createSingleWideCardHTML(i)).join('');
-                grid.innerHTML = revHtml;
+                const upHtml = matchedUpcoming.map(u => createUpcomingCardHTML(u, currentLayoutMode === 'grid2')).join('');
+                grid.innerHTML = revHtml + upHtml;
                 lucide.createIcons();
             }
         }
@@ -1902,6 +2142,7 @@
                 fixedCommentBtn.classList.remove('flex');
             }
 
+            if (view === 'home' || view === 'upcoming' || view === 'watchlist') clearPostUrl();
             if (view === 'watchlist') renderWatchlistView();
             if (view === 'home') renderHomeGrid();
             if (view === 'upcoming') {
@@ -1915,6 +2156,7 @@
             currentActiveCategory = cat;
             renderCategoryTabs();
             switchView('home');
+            const lc = String(cat).toLowerCase();
 
             if (cat === 'All') {
                 filteredReviews = [...allReviews];
@@ -1925,20 +2167,34 @@
                 document.getElementById('currentCategoryTitle').textContent = "Family Safe Collections";
                 document.getElementById('activeFilterLabel').textContent = "Filtered by: 100% Family Safe";
             } else {
-                filteredReviews = allReviews.filter(r => r.category === cat || r.tags.includes(cat) || r.industry === cat);
+                filteredReviews = allReviews.filter(r => r.category === cat || r.tags.some(t => String(t).toLowerCase() === lc) || r.industry === cat);
                 document.getElementById('currentCategoryTitle').textContent = cat;
                 document.getElementById('activeFilterLabel').textContent = `Category: ${cat}`;
             }
+            setActiveSortButton('recent');
             renderHomeGrid();
         }
 
         function filterByTag(tag) {
             toggleMenu(false);
             switchView('home');
-            filteredReviews = allReviews.filter(r => r.tags.includes(tag) || r.industry === tag || r.language.includes(tag) || r.year === tag || r.genres.includes(tag) || r.category === tag);
-            if (filteredReviews.length === 0) filteredReviews = [...allReviews]; // Fallback demo items if tag has no sample yet
+            const t = String(tag).toLowerCase();
+            const has = arr => (arr || []).some(x => String(x).toLowerCase() === t);
+            if (t === '100% family safe' || t === 'kids friendly') {
+                filteredReviews = allReviews.filter(r => r.safetyLevel === 'Safe');
+            } else if (t === 'imdb top rated') {
+                filteredReviews = allReviews.filter(r => parseFloat(r.rating) >= 8);
+            } else {
+                filteredReviews = allReviews.filter(r =>
+                    has(r.tags) || has(r.genres) ||
+                    String(r.industry).toLowerCase() === t ||
+                    String(r.language).toLowerCase().includes(t) ||
+                    String(r.year) === String(tag) ||
+                    String(r.category).toLowerCase() === t);
+            }
             document.getElementById('currentCategoryTitle').textContent = tag;
             document.getElementById('activeFilterLabel').textContent = `Filtered by: ${tag}`;
+            setActiveSortButton('recent');
             renderHomeGrid();
         }
 
@@ -1948,10 +2204,11 @@
             filteredReviews = allReviews.filter(r => r.safetyLevel === level);
             document.getElementById('currentCategoryTitle').textContent = `Safety: ${level}`;
             document.getElementById('activeFilterLabel').textContent = `Safety Level: ${level}`;
+            setActiveSortButton('recent');
             renderHomeGrid();
         }
 
-        function sortItems(type) {
+        function setActiveSortButton(type) {
             document.querySelectorAll('.sort-btn').forEach(btn => {
                 btn.className = "sort-btn py-2.5 rounded-lg text-theme-muted border border-transparent hover:text-theme-main transition-all duration-200";
             });
@@ -1959,6 +2216,11 @@
             if (activeBtn) {
                 activeBtn.className = "sort-btn py-2.5 rounded-lg accent-soft-bg accent-text border accent-border font-bold transition-all duration-200";
             }
+        }
+
+        function sortItems(type) {
+            if (document.getElementById('homeView').classList.contains('hidden')) switchView('home');
+            setActiveSortButton(type);
 
             if (type === 'recent') {
                 filteredReviews.sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
@@ -1967,10 +2229,13 @@
                 filteredReviews.sort((a, b) => getTotalViews(b) - getTotalViews(a));
                 document.getElementById('activeFilterLabel').textContent = "Sorted by: Most viewed";
             } else if (type === 'trending') {
-                filteredReviews.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+                filteredReviews.sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
                 document.getElementById('activeFilterLabel').textContent = "Sorted by: Trending & Top Rated";
             } else if (type === 'random') {
-                filteredReviews.sort(() => Math.random() - 0.5);
+                for (let i = filteredReviews.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [filteredReviews[i], filteredReviews[j]] = [filteredReviews[j], filteredReviews[i]];
+                }
                 document.getElementById('activeFilterLabel').textContent = "Sorted by: Random pick";
             }
             renderHomeGrid();
@@ -1979,14 +2244,16 @@
         function handleSearch(q) {
             const query = q.trim().toLowerCase();
             document.getElementById('clearSearchBtn').classList.toggle('hidden', !query);
+            if (!query) {
+                filterByMainCategory(currentActiveCategory === 'UPCOMING_VIEW' ? 'All' : currentActiveCategory);
+                return;
+            }
             switchView('home');
-            filteredReviews = query 
-                ? allReviews.filter(r => 
-                    r.title.toLowerCase().includes(query) || 
-                    r.industry.toLowerCase().includes(query) ||
-                    r.cast.some(c => c.name.toLowerCase().includes(query))
-                  )
-                : [...allReviews];
+            filteredReviews = allReviews.filter(r =>
+                [r.title, r.industry, r.language, r.category, r.year, ...r.genres, ...r.tags, ...r.cast.map(c => c.name)]
+                    .some(v => String(v || '').toLowerCase().includes(query)));
+            document.getElementById('currentCategoryTitle').textContent = `Search: ${q.trim()}`;
+            document.getElementById('activeFilterLabel').textContent = `${filteredReviews.length} result(s)`;
             renderHomeGrid();
         }
 
@@ -2014,7 +2281,7 @@
         // Point 17 Fixed: Active Light/Dark Button Highlighting & High Contrast
         function setThemeMode(mode) {
             document.documentElement.className = mode;
-            localStorage.setItem('cineguide_theme_mode', mode);
+            try { localStorage.setItem('cineguide_theme_mode', mode); } catch (e) {}
             const lightBtn = document.getElementById('lightModeBtn');
             const darkBtn = document.getElementById('darkModeBtn');
             if (lightBtn && darkBtn) {
@@ -2030,6 +2297,9 @@
 
         function openAuthModal() {
             toggleMenu(false);
+            document.getElementById('authNameInput').value = currentUser ? currentUser.name : '';
+            document.getElementById('authEmailInput').value = currentUser ? currentUser.email : '';
+            document.getElementById('authSignOutBtn').classList.toggle('hidden', !currentUser);
             document.getElementById('authModal').classList.remove('hidden');
             document.getElementById('authModal').classList.add('flex');
         }
@@ -2045,20 +2315,29 @@
             e.preventDefault();
             const name = document.getElementById('authNameInput').value.trim();
             const email = document.getElementById('authEmailInput').value.trim();
-            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+            if (!name) return;
+            const initials = (name.split(/\s+/).filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2)) || 'G';
             currentUser = { name, email, initials };
-            localStorage.setItem('cineguide_user', JSON.stringify(currentUser));
+            safeSave('cineguide_user', currentUser);
             updateUserUI();
             closeAuthModal();
             showToast(`Signed in as ${name}`);
         }
 
+        function signOut() {
+            currentUser = null;
+            try { localStorage.removeItem('cineguide_user'); } catch (e) {}
+            updateUserUI();
+            closeAuthModal();
+            showToast('Signed out');
+        }
+
         function updateUserUI() {
-            if (currentUser) {
-                document.getElementById('userInitials').textContent = currentUser.initials;
-                document.getElementById('drawerUserInitials').textContent = currentUser.initials;
-                document.getElementById('drawerUserName').textContent = currentUser.name;
-            }
+            const initials = currentUser ? currentUser.initials : 'G';
+            const name = currentUser ? currentUser.name : 'Guest';
+            document.getElementById('userInitials').textContent = initials;
+            document.getElementById('drawerUserInitials').textContent = initials;
+            document.getElementById('drawerUserName').textContent = name;
         }
     </script>
 </body>
