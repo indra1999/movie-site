@@ -1,7 +1,9 @@
 // ============================================================================
-// MODULE 1: POSTS, SEO SLUG GENERATOR & TMDB / JIKAN OPEN-SOURCE API FETCHER
+// MODULE 1: POSTS, SEO SLUG, TMDB API & EDIT/UPDATE POSTS SECTION
 // File: admin-modules/posts-api.js
 // ============================================================================
+
+let editingPostIndex = null; // Track if we are editing an existing post
 
 function initPostsModule() {
     const container = document.getElementById('tabSection-posts');
@@ -9,8 +11,8 @@ function initPostsModule() {
 
     container.innerHTML = `
         <div class="mb-6">
-            <h2 class="text-2xl font-black">Publish Movie, Series or Anime Review</h2>
-            <p class="text-xs text-slate-400 mt-1">Auto-fetch metadata via TMDB / Free Jikan API or fill manually with automatic SEO-friendly links.</p>
+            <h2 id="formMainHeading" class="text-2xl font-black">Publish Movie, Series or Anime Review</h2>
+            <p class="text-xs text-slate-400 mt-1">Auto-fetch metadata via TMDB / Free Jikan API or edit your existing published reviews.</p>
         </div>
 
         <!-- API AUTO-FETCH SEARCH BAR -->
@@ -25,10 +27,10 @@ function initPostsModule() {
                 <select id="apiSourceSelect" class="px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs font-bold">
                     <option value="tmdb_movie">TMDB — Movie</option>
                     <option value="tmdb_tv">TMDB — TV Series</option>
-                    <option value="jikan_anime">Free Jikan API — Anime (No Key Needed)</option>
-                    <option value="tvmaze_show">Free TVMaze API — Series/Shows (No Key Needed)</option>
+                    <option value="jikan_anime">Free Jikan API — Anime</option>
+                    <option value="tvmaze_show">Free TVMaze API — Shows</option>
                 </select>
-                <input type="text" id="apiSearchQuery" placeholder="Type title (e.g., The Ugly, Lupin, Naruto, Re:Zero)..." class="flex-1 px-4 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs sm:text-sm focus:outline-none focus:border-rose-500">
+                <input type="text" id="apiSearchQuery" placeholder="Type title to search..." class="flex-1 px-4 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs sm:text-sm focus:outline-none focus:border-rose-500">
                 <button type="button" onclick="searchExternalAPI()" class="px-5 py-2.5 rounded-xl accent-bg text-white font-extrabold text-xs shrink-0 hover:opacity-95">
                     Search & Auto-Fill
                 </button>
@@ -36,8 +38,13 @@ function initPostsModule() {
             <div id="apiSearchResults" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3 hidden"></div>
         </div>
 
-        <!-- NEW REVIEW POST FORM -->
-        <form onsubmit="saveNewReviewPost(event)" class="p-5 sm:p-6 rounded-2xl bg-card border border-subtle space-y-4 mb-8">
+        <!-- NEW / EDIT REVIEW POST FORM -->
+        <form onsubmit="saveOrUpdateReviewPost(event)" class="p-5 sm:p-6 rounded-2xl bg-card border border-subtle space-y-4 mb-8">
+            <div class="flex items-center justify-between mb-2">
+                <h3 id="formSubTitle" class="text-sm font-extrabold text-emerald-400 uppercase tracking-wider">Create New Post</h3>
+                <button type="button" id="cancelEditBtn" onclick="resetPostFormState()" class="hidden text-xs text-rose-400 hover:underline">Cancel Editing</button>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="sm:col-span-2">
                     <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Title *</label>
@@ -49,7 +56,7 @@ function initPostsModule() {
                 </div>
             </div>
 
-            <!-- SEO Permalink Preview Box (Point 21) -->
+            <!-- SEO Permalink Preview Box -->
             <div class="p-3 rounded-xl bg-[#090a0f] border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                 <div class="truncate">
                     <span class="font-bold text-emerald-400 mr-1.5">SEO Link Preview:</span>
@@ -70,8 +77,8 @@ function initPostsModule() {
                     </select>
                 </div>
                 <div>
-                    <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Industry / Subcategory</label>
-                    <input type="text" id="postIndustry" placeholder="Hollywood / Korean Movies" class="w-full px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
+                    <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Industry</label>
+                    <input type="text" id="postIndustry" placeholder="Hollywood / Korean" class="w-full px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
                 </div>
                 <div>
                     <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">IMDb Rating</label>
@@ -80,9 +87,9 @@ function initPostsModule() {
                 <div>
                     <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Safety Verdict</label>
                     <select id="postSafety" class="w-full px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs font-bold">
-                        <option value="Safe">Safe (Family Friendly)</option>
-                        <option value="Moderate">Moderate (PG-13 Caution)</option>
-                        <option value="Strict">Strict (18+ Only)</option>
+                        <option value="Safe">Safe (Family)</option>
+                        <option value="Moderate">Moderate (PG-13)</option>
+                        <option value="Strict">Strict (18+)</option>
                     </select>
                 </div>
             </div>
@@ -99,42 +106,41 @@ function initPostsModule() {
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <input type="text" id="postLanguage" placeholder="Language (e.g. Korean)" class="px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
-                <input type="text" id="postDuration" placeholder="Duration (e.g. 1h 55m)" class="px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
-                <input type="text" id="postPlatform" placeholder="Platform (NF / AMZN)" class="px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
-                <input type="text" id="postAgeRating" placeholder="Age (PG-13 / TV-14)" class="px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
+                <input type="text" id="postLanguage" placeholder="Language" class="px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
+                <input type="text" id="postDuration" placeholder="Duration" class="px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
+                <input type="text" id="postPlatform" placeholder="Platform (NF/AMZN)" class="px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
+                <input type="text" id="postAgeRating" placeholder="Age (PG-13)" class="px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="text" id="postGenres" placeholder="Genres comma separated (Mystery, Thriller)" class="px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
-                <input type="text" id="postTrailer" placeholder="YouTube Embed URL (https://www.youtube.com/embed/...)" class="px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
+                <input type="text" id="postGenres" placeholder="Genres (Mystery, Thriller)" class="px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
+                <input type="text" id="postTrailer" placeholder="YouTube Embed URL" class="px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
             </div>
 
             <div>
-                <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Story Summary & SEO Description *</label>
+                <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Story Summary *</label>
                 <textarea id="postSummary" rows="3" required placeholder="Plot synopsis..." class="w-full px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs"></textarea>
             </div>
 
-            <!-- Parental Content Guide Inputs -->
             <div class="p-4 rounded-xl bg-[#090a0f] border border-subtle space-y-3">
                 <h4 class="text-xs font-extrabold uppercase text-rose-400">Parental Guide Breakdown</h4>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <input type="text" id="pgSex" placeholder="Sex & Nudity (e.g. None — Zero nudity)" class="px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
-                    <input type="text" id="pgViolence" placeholder="Violence & Gore (e.g. Moderate action)" class="px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
-                    <input type="text" id="pgProfanity" placeholder="Profanity (e.g. Mild language)" class="px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
-                    <input type="text" id="pgDrugs" placeholder="Drugs & Alcohol (e.g. None)" class="px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
+                    <input type="text" id="pgSex" placeholder="Sex & Nudity" class="px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
+                    <input type="text" id="pgViolence" placeholder="Violence" class="px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
+                    <input type="text" id="pgProfanity" placeholder="Profanity" class="px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
+                    <input type="text" id="pgDrugs" placeholder="Drugs" class="px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
                 </div>
-                <input type="text" id="pgVerdict" placeholder="Final Family Verdict (e.g. 100% Safe to watch with parents & kids)" class="w-full px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
+                <input type="text" id="pgVerdict" placeholder="Final Family Verdict" class="w-full px-3 py-2 rounded-lg bg-card border border-subtle text-xs">
             </div>
 
-            <button type="submit" class="w-full py-3.5 rounded-xl accent-bg text-white font-extrabold text-sm shadow-lg hover:opacity-95 transition">
+            <button type="submit" id="formSubmitBtn" class="w-full py-3.5 rounded-xl accent-bg text-white font-extrabold text-sm shadow-lg hover:opacity-95 transition">
                 Publish Review Post
             </button>
         </form>
 
-        <!-- PUBLISHED CUSTOM POSTS LIST -->
+        <!-- PUBLISHED CUSTOM POSTS LIST & EDIT MANAGER -->
         <div>
-            <h3 class="text-base font-extrabold mb-3">Your Custom Published Posts</h3>
+            <h3 class="text-base font-extrabold mb-3">Manage & Edit Published Posts</h3>
             <div id="adminPublishedPostsList" class="space-y-2.5"></div>
         </div>
     `;
@@ -157,7 +163,6 @@ function updateSEOPermalinkPreview() {
     document.getElementById('seoLinkPreview').textContent = `${domain}/?post=${slug}`;
 }
 
-// Point 22: Search TMDB or Free Open-Source Jikan / TVMaze APIs
 async function searchExternalAPI() {
     const source = document.getElementById('apiSourceSelect').value;
     const query = document.getElementById('apiSearchQuery').value.trim();
@@ -174,7 +179,7 @@ async function searchExternalAPI() {
             resultsBox.innerHTML = (data.data || []).map(item => `
                 <div onclick='fillFormFromAPI(${JSON.stringify({
                     title: item.title_english || item.title,
-                    year: item.year || (item.aired?.prop?.from?.year) || '2025',
+                    year: item.year || '2025',
                     category: 'Anime',
                     industry: 'Anime Movies',
                     rating: item.score || '8.0',
@@ -221,10 +226,9 @@ async function searchExternalAPI() {
                 </div>`;
             }).join('');
         } else {
-            // TMDB Movie or TV
             const tmdbKey = localStorage.getItem('cineguide_tmdb_key');
             if (!tmdbKey) {
-                resultsBox.innerHTML = `<p class="text-xs text-amber-400 col-span-full">Please save your free TMDB API Key in the "SEO, Footer & Security" tab first, or select the Free Jikan / TVMaze API option!</p>`;
+                resultsBox.innerHTML = `<p class="text-xs text-amber-400 col-span-full">Please save your TMDB API Key in Settings first!</p>`;
                 return;
             }
             const type = source === 'tmdb_tv' ? 'tv' : 'movie';
@@ -248,13 +252,13 @@ async function searchExternalAPI() {
                     <img src="https://image.tmdb.org/t/p/w200${m.poster_path}" class="w-12 h-16 object-cover rounded-lg bg-card">
                     <div class="overflow-hidden">
                         <h4 class="font-bold text-xs truncate">${m.title || m.name}</h4>
-                        <p class="text-[10px] text-amber-400">★ ${(m.vote_average || 7).toFixed(1)} • ${(m.release_date || m.first_air_date || '').slice(0,4)}</p>
+                        <p class="text-[10px] text-amber-400">★ ${(m.vote_average || 7).toFixed(1)}</p>
                     </div>
                 </div>
             `).join('');
         }
     } catch (err) {
-        resultsBox.innerHTML = `<p class="text-xs text-rose-400 col-span-full">API Error. Check internet connection or API Key.</p>`;
+        resultsBox.innerHTML = `<p class="text-xs text-rose-400 col-span-full">API Error.</p>`;
     }
 }
 
@@ -272,10 +276,10 @@ function fillFormFromAPI(item) {
     document.getElementById('postGenres').value = item.genres || 'Drama';
     document.getElementById('postSummary').value = item.summary || '';
     updateSEOPermalinkPreview();
-    showAdminToast(`Auto-filled "${item.title}" from API!`);
+    showAdminToast(`Auto-filled "${item.title}"!`);
 }
 
-function saveNewReviewPost(e) {
+function saveOrUpdateReviewPost(e) {
     e.preventDefault();
     const title = document.getElementById('postTitle').value.trim();
     const year = document.getElementById('postYear').value.trim();
@@ -284,8 +288,10 @@ function saveNewReviewPost(e) {
     const industry = document.getElementById('postIndustry').value.trim() || 'Hollywood';
     const category = document.getElementById('postCategory').value;
 
-    const newPost = {
-        id: slug || ('rev-' + Date.now()),
+    const existing = JSON.parse(localStorage.getItem('cineguide_custom_reviews') || '[]');
+
+    const postData = {
+        id: editingPostIndex !== null && existing[editingPostIndex] ? existing[editingPostIndex].id : ('rev-' + Date.now()),
         slug: slug,
         title,
         year,
@@ -298,8 +304,8 @@ function saveNewReviewPost(e) {
         ageRating: document.getElementById('postAgeRating').value.trim() || 'PG-13',
         duration: document.getElementById('postDuration').value.trim() || '1h 50m',
         platform: document.getElementById('postPlatform').value.trim() || 'HD',
-        uploadedAt: Date.now(),
-        baseViews: 1,
+        uploadedAt: editingPostIndex !== null && existing[editingPostIndex] ? existing[editingPostIndex].uploadedAt : Date.now(),
+        baseViews: editingPostIndex !== null && existing[editingPostIndex] ? (existing[editingPostIndex].baseViews || 1) : 1,
         safetyLevel: document.getElementById('postSafety').value,
         backdrop: document.getElementById('postBackdrop').value.trim(),
         poster: document.getElementById('postPoster').value.trim(),
@@ -315,18 +321,22 @@ function saveNewReviewPost(e) {
             drugsAlcohol: document.getElementById('pgDrugs').value.trim() || 'None.'
         },
         verdict: document.getElementById('pgVerdict').value.trim() || 'Suitable for family viewing.',
-        cast: [],
-        episodes: [],
-        defaultComments: []
+        cast: editingPostIndex !== null && existing[editingPostIndex] ? (existing[editingPostIndex].cast || []) : [],
+        episodes: editingPostIndex !== null && existing[editingPostIndex] ? (existing[editingPostIndex].episodes || []) : [],
+        defaultComments: editingPostIndex !== null && existing[editingPostIndex] ? (existing[editingPostIndex].defaultComments || []) : []
     };
 
-    const existing = JSON.parse(localStorage.getItem('cineguide_custom_reviews') || '[]');
-    existing.unshift(newPost);
-    localStorage.setItem('cineguide_custom_reviews', JSON.stringify(existing));
+    if (editingPostIndex !== null) {
+        existing[editingPostIndex] = postData;
+        showAdminToast(`Updated "${title}" successfully!`);
+    } else {
+        existing.unshift(postData);
+        showAdminToast(`Published "${title}" successfully!`);
+    }
 
-    e.target.reset();
+    localStorage.setItem('cineguide_custom_reviews', JSON.stringify(existing));
+    resetPostFormState();
     renderAdminPublishedPosts();
-    showAdminToast(`Published "${title}" with SEO slug!`);
 }
 
 function renderAdminPublishedPosts() {
@@ -334,23 +344,76 @@ function renderAdminPublishedPosts() {
     const box = document.getElementById('adminPublishedPostsList');
     if (!box) return;
     if (list.length === 0) {
-        box.innerHTML = `<p class="text-xs text-slate-500">No custom posts added yet. Default demo posts are active on the site.</p>`;
+        box.innerHTML = `<p class="text-xs text-slate-500">No custom posts created yet.</p>`;
         return;
     }
     box.innerHTML = list.map((item, idx) => `
         <div class="p-3.5 rounded-xl bg-card border border-subtle flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <img src="${item.poster}" class="w-10 h-14 object-cover rounded-lg">
-                <div>
-                    <h4 class="font-bold text-sm">${item.title} (${item.year})</h4>
+            <div class="flex items-center gap-3 overflow-hidden">
+                <img src="${item.poster}" class="w-10 h-14 object-cover rounded-lg shrink-0">
+                <div class="truncate">
+                    <h4 class="font-bold text-sm truncate">${item.title} (${item.year})</h4>
                     <p class="text-[11px] text-emerald-400 font-mono">/?post=${item.slug || item.id}</p>
                 </div>
             </div>
-            <button onclick="deleteCustomPost(${idx})" class="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-600 hover:text-white text-xs font-bold">
-                Delete
-            </button>
+            <div class="flex items-center gap-2 shrink-0">
+                <button onclick="loadPostForEditing(${idx})" class="px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-400 hover:bg-amber-500 hover:text-black text-xs font-bold transition">
+                    Edit
+                </button>
+                <button onclick="deleteCustomPost(${idx})" class="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-600 hover:text-white text-xs font-bold transition">
+                    Delete
+                </button>
+            </div>
         </div>
     `).join('');
+}
+
+function loadPostForEditing(index) {
+    const list = JSON.parse(localStorage.getItem('cineguide_custom_reviews') || '[]');
+    const item = list[index];
+    if (!item) return;
+
+    editingPostIndex = index;
+    document.getElementById('formSubTitle').textContent = `Editing: ${item.title}`;
+    document.getElementById('cancelEditBtn').classList.remove('hidden');
+    document.getElementById('formSubmitBtn').textContent = 'Update Review Post';
+
+    document.getElementById('postTitle').value = item.title || '';
+    document.getElementById('postYear').value = item.year || '';
+    document.getElementById('postCategory').value = item.category || 'Movie';
+    document.getElementById('postIndustry').value = item.industry || '';
+    document.getElementById('postRating').value = item.rating || '';
+    document.getElementById('postPoster').value = item.poster || '';
+    document.getElementById('postBackdrop').value = item.backdrop || '';
+    document.getElementById('postLanguage').value = item.language || '';
+    document.getElementById('postDuration').value = item.duration || '';
+    document.getElementById('postPlatform').value = item.platform || '';
+    document.getElementById('postAgeRating').value = item.ageRating || '';
+    document.getElementById('postGenres').value = (item.genres || []).join(', ');
+    document.getElementById('postTrailer').value = item.trailerUrl || '';
+    document.getElementById('postSummary').value = item.summary || '';
+
+    if (item.parentalGuide) {
+        document.getElementById('pgSex').value = item.parentalGuide.sexNudity || '';
+        document.getElementById('pgViolence').value = item.parentalGuide.violence || '';
+        document.getElementById('pgProfanity').value = item.parentalGuide.profanity || '';
+        document.getElementById('pgDrugs').value = item.parentalGuide.drugsAlcohol || '';
+    }
+    document.getElementById('pgVerdict').value = item.verdict || '';
+
+    updateSEOPermalinkPreview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetPostFormState() {
+    editingPostIndex = null;
+    document.getElementById('formSubTitle').textContent = 'Create New Post';
+    document.getElementById('cancelEditBtn').classList.add('hidden');
+    document.getElementById('formSubmitBtn').textContent = 'Publish Review Post';
+    // Clear form inputs
+    const form = document.querySelector('form');
+    if (form) form.reset();
+    updateSEOPermalinkPreview();
 }
 
 function deleteCustomPost(index) {
