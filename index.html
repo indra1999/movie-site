@@ -1012,18 +1012,11 @@
                 const it = findPostBySlug(wanted);
                 if (it) openDetailView(it.id, true);
             }
-            // Open an upcoming release directly from its link (?upcoming=id)
-            const wantedUp = new URLSearchParams(location.search).get('upcoming');
-            if (wantedUp && upcomingList.some(x => x.id === wantedUp)) openUpcomingDetail(wantedUp, true);
 
             window.addEventListener('popstate', () => {
-                const params = new URLSearchParams(location.search);
-                const p = params.get('post');
-                const up = params.get('upcoming');
+                const p = new URLSearchParams(location.search).get('post');
                 const it = p ? findPostBySlug(p) : null;
-                if (it) openDetailView(it.id, true);
-                else if (up && upcomingList.some(x => x.id === up)) openUpcomingDetail(up, true);
-                else switchView(currentActiveCategory === 'UPCOMING_VIEW' ? 'upcoming' : 'home');
+                if (it) openDetailView(it.id, true); else switchView('home');
             });
 
             // Live Auto-Refresh for "X mins/hours ago" timestamps every 60 seconds
@@ -1392,7 +1385,7 @@
 
                 if (isGrid2) {
                     return `
-                    <div class="group cursor-pointer" onclick="openUpcomingDetail('${esc(u.id)}')">
+                    <div class="group">
                         <div class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2 shadow-md">
                             <img src="${u.poster || u.backdrop}" alt="${esc(u.title)}" class="w-full h-full object-cover">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
@@ -1400,10 +1393,10 @@
                             <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between">
                                 <span class="text-[10px] font-bold text-amber-300">${esc(u.releaseDate)}</span>
                                 <div class="flex gap-1">
-                                    <button onclick="event.stopPropagation(); toggleUpcomingWatchlist('${esc(u.id)}')" class="w-7 h-7 rounded-lg ${inWatchlist ? 'bg-[#e0533c] text-white' : 'bg-black/75 text-white'} flex items-center justify-center border border-white/15">
+                                    <button onclick="toggleUpcomingWatchlist('${esc(u.id)}')" class="w-7 h-7 rounded-lg ${inWatchlist ? 'bg-[#e0533c] text-white' : 'bg-black/75 text-white'} flex items-center justify-center border border-white/15">
                                         <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
                                     </button>
-                                    <button onclick="event.stopPropagation(); toggleUpcomingNotify('${esc(u.id)}')" class="w-7 h-7 rounded-lg ${isNotified ? 'bg-amber-500 text-black' : 'bg-black/75 text-white'} flex items-center justify-center border border-white/15">
+                                    <button onclick="toggleUpcomingNotify('${esc(u.id)}')" class="w-7 h-7 rounded-lg ${isNotified ? 'bg-amber-500 text-black' : 'bg-black/75 text-white'} flex items-center justify-center border border-white/15">
                                         <i data-lucide="bell" class="w-3.5 h-3.5"></i>
                                     </button>
                                 </div>
@@ -1416,7 +1409,7 @@
 
                 // Single Wide Upcoming Card with high Light/Dark Mode Contrast (Point 17 Fixed)
                 return `
-                <div onclick="openUpcomingDetail('${esc(u.id)}')" class="rounded-2xl overflow-hidden bg-theme-card border border-theme p-4 flex flex-col justify-between shadow-md hover:border-amber-500/50 transition cursor-pointer">
+                <div class="rounded-2xl overflow-hidden bg-theme-card border border-theme p-4 flex flex-col justify-between shadow-md hover:border-amber-500/50 transition">
                     <div>
                         <div class="relative h-44 rounded-xl overflow-hidden bg-black mb-3.5">
                             <img src="${esc(u.backdrop)}" alt="${esc(u.title)}" class="w-full h-full object-cover opacity-90">
@@ -1438,11 +1431,11 @@
 
                         <!-- Point 20 Fixed: Upcoming Watchlist + Release Alert Notification Buttons -->
                         <div class="flex items-center gap-2">
-                            <button onclick="event.stopPropagation(); toggleUpcomingWatchlist('${esc(u.id)}')" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${inWatchlist ? 'bg-[#e0533c] text-white border-[#e0533c]' : 'bg-theme-elevated border-theme text-theme-main hover:border-rose-500/40'}">
+                            <button onclick="toggleUpcomingWatchlist('${esc(u.id)}')" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${inWatchlist ? 'bg-[#e0533c] text-white border-[#e0533c]' : 'bg-theme-elevated border-theme text-theme-main hover:border-rose-500/40'}">
                                 <i data-lucide="${inWatchlist ? 'bookmark-check' : 'bookmark'}" class="w-3.5 h-3.5"></i>
                                 <span>${inWatchlist ? 'Saved' : 'Watchlist'}</span>
                             </button>
-                            <button onclick="event.stopPropagation(); toggleUpcomingNotify('${esc(u.id)}')" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${isNotified ? 'bg-amber-500 text-black border-amber-500' : 'bg-theme-elevated border-theme text-theme-main hover:border-amber-500/40'}">
+                            <button onclick="toggleUpcomingNotify('${esc(u.id)}')" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${isNotified ? 'bg-amber-500 text-black border-amber-500' : 'bg-theme-elevated border-theme text-theme-main hover:border-amber-500/40'}">
                                 <i data-lucide="${isNotified ? 'bell-ring' : 'bell'}" class="w-3.5 h-3.5"></i>
                                 <span>${isNotified ? 'Alert On' : 'Notify Me'}</span>
                             </button>
@@ -1630,9 +1623,8 @@
             document.title = 'CINEGUIDE — Movie, Series & Anime Reviews + Parental Guide';
             try {
                 const url = new URL(location.href);
-                if (url.searchParams.has('post') || url.searchParams.has('upcoming')) {
+                if (url.searchParams.has('post')) {
                     url.searchParams.delete('post');
-                    url.searchParams.delete('upcoming');
                     history.replaceState({}, '', url);
                 }
             } catch (e) {}
@@ -1652,7 +1644,6 @@
         }
 
         function renderDetailContent() {
-            if (currentDetailItem && currentDetailItem.isUpcoming) { renderUpcomingDetail(); return; }
             const item = currentDetailItem;
             const isBookmarked = watchlistIds.includes(item.id);
             const isWatched = watchedIds.includes(item.id);
@@ -1918,173 +1909,6 @@
                 </div>
             `;
             injectAd('adDetailSlot', getAdsConfig().detailBanner);
-            lucide.createIcons();
-        }
-
-        // --- UPCOMING RELEASE DETAIL PAGE ---
-        function normalizeUpcoming(u) {
-            const x = Object.assign({}, u);
-            x.isUpcoming = true;
-            x.cast = Array.isArray(x.cast) ? x.cast : [];
-            x.genres = Array.isArray(x.genres) ? x.genres : (x.genres ? String(x.genres).split(',').map(g => g.trim()).filter(Boolean) : []);
-            x.backdrop = x.backdrop || x.poster || '';
-            x.poster = x.poster || x.backdrop || '';
-            x.note = x.note || '';
-            x.year = x.year || ((String(x.releaseDate || '').match(/\d{4}/) || [''])[0]);
-            return x;
-        }
-
-        function upcomingCountdown(u) {
-            const t = Date.parse(u.releaseDate);
-            if (isNaN(t)) return { text: 'Release date to be announced', tone: 'muted' };
-            const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
-            const days = Math.round((t - startOfToday.getTime()) / 86400000);
-            if (days > 1) return { text: `${days} days to go`, tone: 'amber' };
-            if (days === 1) return { text: 'Releases tomorrow', tone: 'amber' };
-            if (days === 0) return { text: 'Releasing today!', tone: 'green' };
-            return { text: 'Now released', tone: 'green' };
-        }
-
-        function openUpcomingDetail(id, skipHistory) {
-            const raw = upcomingList.find(x => x.id === id);
-            if (!raw) return;
-            currentDetailItem = normalizeUpcoming(raw);
-            renderUpcomingDetail();
-            switchView('detail');
-            // comments are not available for unreleased titles
-            const fixedBtn = document.getElementById('fixedDetailCommentBtn');
-            if (fixedBtn) { fixedBtn.classList.add('hidden'); fixedBtn.classList.remove('flex'); }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            document.title = `${currentDetailItem.title} — Upcoming | CINEGUIDE`;
-            if (!skipHistory) {
-                try {
-                    const url = new URL(location.href);
-                    url.searchParams.delete('post');
-                    url.searchParams.set('upcoming', id);
-                    history.pushState({ upcoming: id }, '', url);
-                } catch (e) { /* file:// or sandbox */ }
-            }
-        }
-
-        function renderUpcomingDetail() {
-            const u = currentDetailItem;
-            if (!u) return;
-            const inWatchlist = watchlistIds.includes(u.id);
-            const isNotified = notifyUpcomingIds.includes(u.id);
-            const cd = upcomingCountdown(u);
-            const cdCls = cd.tone === 'green' ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
-                : cd.tone === 'amber' ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
-                : 'bg-theme-elevated text-theme-muted border-theme';
-            const trailerEmbed = toEmbedUrl(u.trailerUrl);
-            const others = upcomingList.filter(x => x.id !== u.id && isUpcomingActive(x)).slice(0, 4);
-
-            const infoRow = (label, value) => value ? `
-                <div class="flex items-start justify-between gap-4 py-2.5 border-b border-theme last:border-0">
-                    <span class="text-xs text-theme-muted shrink-0">${label}</span>
-                    <span class="text-xs font-bold text-theme-main text-right">${esc(value)}</span>
-                </div>` : '';
-
-            document.getElementById('detailContent').innerHTML = `
-                <!-- HERO -->
-                <div class="relative w-full h-[300px] sm:h-[400px] bg-black overflow-hidden">
-                    <img src="${esc(u.backdrop)}" alt="${esc(u.title)}" class="w-full h-full object-cover opacity-85">
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#090a0f] via-[#090a0f]/40 to-transparent"></div>
-                    <button onclick="switchView('upcoming')" class="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs font-bold text-white">
-                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Upcoming
-                    </button>
-                    <span class="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-amber-500 text-black text-[11px] font-extrabold uppercase">${esc(u.type)}</span>
-                    <div class="absolute bottom-4 left-4 right-4">
-                        <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white">
-                            ${esc(u.title)} ${u.year ? `<span class="font-normal text-gray-300">${esc(u.year)}</span>` : ''}
-                        </h1>
-                    </div>
-                </div>
-
-                <div class="px-4 pt-3">
-                    <!-- POSTER + KEY FACTS -->
-                    <div class="flex gap-5 items-start mb-6">
-                        <div class="w-32 sm:w-40 shrink-0 rounded-2xl overflow-hidden border border-theme shadow-2xl bg-theme-card">
-                            <img src="${esc(u.poster)}" alt="${esc(u.title)}" class="w-full h-48 sm:h-56 object-cover">
-                        </div>
-                        <div class="flex-1 pt-1 min-w-0">
-                            <div class="flex items-center gap-1.5 text-sm font-extrabold text-amber-500 mb-2">
-                                <i data-lucide="calendar" class="w-4 h-4"></i> ${esc(u.releaseDate || 'TBA')}
-                            </div>
-                            <span class="inline-block px-3 py-1 rounded-full border text-xs font-extrabold mb-3 ${cdCls}">${esc(cd.text)}</span>
-                            <div class="flex flex-wrap gap-2 mb-1">
-                                <span class="px-2.5 py-1 rounded-lg bg-theme-elevated border border-theme text-theme-main text-[11px] font-bold">${esc(u.releaseWhere || 'TBA')}</span>
-                                <span class="px-2.5 py-1 rounded-lg bg-theme-elevated border border-theme text-emerald-500 text-[11px] font-bold">${esc(u.expectedSafety || 'TBA')}</span>
-                                ${u.duration ? `<span class="px-2.5 py-1 rounded-lg bg-theme-elevated border border-theme text-theme-main text-[11px] font-bold">${esc(u.duration)}</span>` : ''}
-                            </div>
-                            ${u.genres.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${u.genres.map(g => `<span class="px-2 py-0.5 rounded-md bg-theme-card border border-theme text-[10px] font-semibold text-theme-muted">${esc(g)}</span>`).join('')}</div>` : ''}
-                        </div>
-                    </div>
-
-                    <!-- ACTIONS -->
-                    <div class="grid grid-cols-2 gap-2.5 mb-3">
-                        <button onclick="toggleUpcomingWatchlist('${esc(u.id)}'); renderUpcomingDetail(); lucide.createIcons();" class="py-3 rounded-2xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition ${inWatchlist ? 'bg-[#e0533c] text-white border-[#e0533c]' : 'bg-theme-card border-theme text-theme-main'}">
-                            <i data-lucide="${inWatchlist ? 'bookmark-check' : 'bookmark'}" class="w-4 h-4"></i> ${inWatchlist ? 'Saved to Watchlist' : 'Add to Watchlist'}
-                        </button>
-                        <button onclick="toggleUpcomingNotify('${esc(u.id)}'); renderUpcomingDetail(); lucide.createIcons();" class="py-3 rounded-2xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition ${isNotified ? 'bg-amber-500 text-black border-amber-500' : 'bg-theme-card border-theme text-theme-main'}">
-                            <i data-lucide="${isNotified ? 'bell-ring' : 'bell'}" class="w-4 h-4"></i> ${isNotified ? 'Alert On' : 'Notify Me'}
-                        </button>
-                    </div>
-                    ${trailerEmbed ? `
-                    <button onclick="toggleTrailerModal()" class="w-full py-3 rounded-2xl bg-theme-card border border-theme text-theme-main font-bold text-xs sm:text-sm flex items-center justify-center gap-2 mb-5">
-                        <i data-lucide="play" class="w-4 h-4 fill-current"></i> Watch Trailer
-                    </button>
-                    <div id="trailerBox" class="hidden mb-6">
-                        <div class="aspect-video rounded-2xl overflow-hidden bg-black border border-theme">
-                            <iframe data-src="${esc(trailerEmbed)}" class="w-full h-full" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
-                        </div>
-                    </div>` : '<div class="mb-5"></div>'}
-
-                    <!-- STORY -->
-                    ${u.note ? `
-                    <div class="rounded-2xl bg-theme-card border border-theme p-4 mb-6">
-                        <h2 class="text-sm font-extrabold text-theme-main mb-2">Overview</h2>
-                        <p class="text-sm leading-relaxed text-theme-muted">${esc(u.note)}</p>
-                    </div>` : ''}
-
-                    <!-- RELEASE DETAILS -->
-                    <div class="rounded-2xl bg-theme-card border border-theme px-4 py-1 mb-6">
-                        <h2 class="text-sm font-extrabold text-theme-main pt-3 pb-1">Release Details</h2>
-                        ${infoRow('Release date', u.releaseDate)}
-                        ${infoRow('Status', cd.text)}
-                        ${infoRow('Type', u.type)}
-                        ${infoRow('Where to watch', u.releaseWhere)}
-                        ${infoRow('Expected rating', u.expectedSafety)}
-                        ${infoRow('Language', u.language)}
-                        ${infoRow('Duration', u.duration)}
-                        ${infoRow('Genres', u.genres.join(', '))}
-                    </div>
-
-                    <!-- CAST -->
-                    <div class="mb-8 ${u.cast.length ? '' : 'hidden'}">
-                        <div class="flex items-center justify-between mb-3">
-                            <h2 class="text-lg font-extrabold text-theme-main">Cast</h2>
-                            <span class="text-xs text-theme-muted">Tap an actor for details</span>
-                        </div>
-                        <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                            ${u.cast.map((c, i) => `
-                                <div onclick="openCastMember(${i})" class="w-32 sm:w-40 shrink-0 cursor-pointer group">
-                                    <div class="h-40 sm:h-48 rounded-2xl overflow-hidden bg-theme-card border border-theme mb-2.5 shadow-md">
-                                        <img src="${esc(c.photo)}" alt="${esc(c.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-                                    </div>
-                                    <h4 class="font-extrabold text-sm text-theme-main truncate group-hover:text-rose-500">${esc(c.name)}</h4>
-                                    <p class="text-xs text-theme-muted truncate">${esc(c.character)}</p>
-                                </div>`).join('')}
-                        </div>
-                    </div>
-
-                    <!-- MORE UPCOMING -->
-                    ${others.length ? `
-                    <div class="mb-6">
-                        <h2 class="text-lg font-extrabold text-theme-main mb-3">More Upcoming Releases</h2>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">${others.map(o => createUpcomingCardHTML(o, true)).join('')}</div>
-                    </div>` : ''}
-                </div>`;
             lucide.createIcons();
         }
 
