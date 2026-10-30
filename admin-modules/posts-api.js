@@ -47,7 +47,7 @@ function renderAddPostFormTab() {
                     Search & Auto-Fill
                 </button>
             </div>
-            <p class="text-[10px] text-slate-500 mt-2">টাইটেল লিখে সার্চ করলে API কল বেশি লাগে। তাই সরাসরি <b>TMDB ID</b> বা <b>TMDB লিংক</b> দিন — ১টা কলেই সব ডেটা, ট্রেলার ও কাস্ট ছবি আসবে।</p>
+            <p class="text-[10px] text-slate-500 mt-2">Searching by title uses extra API calls. Enter a <b>TMDB ID</b> or <b>TMDB link</b> instead: one call fetches all data, the trailer and cast photos.</p>
             <div id="apiSearchResults" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3 hidden"></div>
         </div>
 
@@ -481,7 +481,7 @@ async function fetchTmdbFull(type, id) {
     try {
         d = await tmdbRequest(`/${type}/${id}`, detail);
     } catch (e) {
-        throw new Error(e.status === 404 ? `TMDB-তে ${type} ID ${id} পাওয়া যায়নি।` : e.message);
+        throw new Error(e.status === 404 ? `No ${type} found on TMDB with ID ${id}.` : e.message);
     }
     // if the first call came back without any YouTube video, retry videos with no language filter
     let trailer = pickTmdbTrailer(d.videos);
@@ -522,7 +522,7 @@ async function tmdbSearchOrLookup(source, query, resultsBox) {
     const parsed = parseTmdbInput(query, source);
     if (parsed) {
         // ID / link → ONE direct lookup, no title search
-        resultsBox.innerHTML = `<p class="text-xs text-slate-400 col-span-full">TMDB থেকে ডেটা আনা হচ্ছে (ID ${esc(parsed.id)})...</p>`;
+        resultsBox.innerHTML = `<p class="text-xs text-slate-400 col-span-full">Fetching data from TMDB (ID ${esc(parsed.id)})...</p>`;
         let full;
         try {
             full = await fetchTmdbFull(parsed.type, parsed.id);
