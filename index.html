@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CINEGUIDE — Movie, Series & Anime Reviews + Parental Guide</title>
+    <meta name="description" content="Honest movie, web series and anime reviews with ratings, cast details and a complete family parental guide covering nudity, violence and profanity.">
+    <meta name="theme-color" content="#090a0f">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="CINEGUIDE">
+    <meta property="og:title" content="CINEGUIDE — Movie, Series & Anime Reviews + Parental Guide">
+    <meta property="og:description" content="Ratings, reviews and a full parental guide for every title.">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e11d48'/%3E%3Cpath d='M26 20l20 12-20 12z' fill='white'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"CINEGUIDE","description":"Movie, series and anime reviews with parental guide"}</script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -336,6 +346,7 @@
                 </div>
             </div>
 
+            <div id="spotlightSection" class="hidden mb-6"></div>
             <!-- POINT 2, 18 & 19 FIXED: SORTING BAR + GLOBAL SINGLE/2-COLUMN LAYOUT TOGGLE BUTTON -->
             <div class="p-2 rounded-2xl bg-theme-card border border-theme mb-5">
                 <div class="grid grid-cols-4 gap-1 p-1 bg-theme-main rounded-xl text-xs font-semibold mb-2.5">
@@ -513,7 +524,9 @@
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             <h3 class="text-lg font-extrabold text-theme-main mb-1">Account & Cloud Sync</h3>
-            <p class="text-xs text-theme-muted mb-4">Save your name to use it on comments. Your data is stored on this device only.</p>
+            <p class="text-xs text-theme-muted mb-4">Sign in with Google to keep your Watchlist, Watched and ratings saved in the cloud on every device. Without signing in, data stays on this device only.</p>
+            <button id="googleSignInBtn" type="button" onclick="CineSync.signInWithGoogle()" class="w-full mb-3 py-2.5 rounded-xl bg-white text-gray-800 font-bold text-sm border border-gray-300 hover:opacity-90">Continue with Google</button>
+            <div class="text-center text-[11px] text-theme-muted mb-3">— or just save a name for comments —</div>
             <form onsubmit="handleSimpleSyncLogin(event)" class="space-y-3">
                 <input type="text" id="authNameInput" required placeholder="Your Name (e.g. indra mondal)" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-main border border-theme text-theme-main text-sm">
                 <input type="email" id="authEmailInput" required placeholder="Email Address" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-main border border-theme text-theme-main text-sm">
@@ -523,8 +536,19 @@
         </div>
     </div>
 
+    <div id="infoModal" class="fixed inset-0 z-50 drawer-backdrop hidden items-end sm:items-center justify-center sm:p-4" onclick="if(event.target===this)closeInfoPage()">
+        <div class="bg-theme-card border border-theme rounded-t-3xl sm:rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-theme flex items-center justify-between">
+                <h3 id="infoTitle" class="font-extrabold text-base text-theme-main"></h3>
+                <button onclick="closeInfoPage()" class="p-1.5 rounded-lg bg-theme-elevated text-theme-muted hover:text-theme-main" aria-label="Close"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div id="infoBody" class="p-5 overflow-y-auto text-sm text-theme-muted leading-relaxed space-y-3"></div>
+        </div>
+    </div>
+    <button id="backToTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top" class="hidden fixed bottom-5 right-5 z-30 w-11 h-11 rounded-full bg-theme-card border border-theme text-theme-main shadow-xl items-center justify-center hover:border-rose-500/50"><i data-lucide="arrow-up" class="w-5 h-5"></i></button>
+
     <!-- ================= TOAST NOTIFICATION ================= -->
-    <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden px-4 py-3 rounded-2xl bg-slate-900 text-white border border-white/15 shadow-2xl text-xs font-bold items-center gap-2.5">
+    <div id="toastBanner" class="fixed bottom-20 right-5 z-50 hidden px-4 py-3 rounded-2xl bg-slate-900 text-white border border-white/15 shadow-2xl text-xs font-bold items-center gap-2.5">
         <i data-lucide="bell-ring" class="w-4 h-4 text-amber-400"></i>
         <span id="toastText">Saved!</span>
     </div>
@@ -549,9 +573,18 @@
                     <button onclick="switchView('watchlist')" class="hover:text-theme-main transition">Watchlist</button>
                 </div>
             </div>
+            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-x-5 gap-y-2 py-4 border-b border-theme text-xs font-semibold text-theme-muted">
+                <button onclick="openInfoPage('about')" class="hover:text-theme-main">About Us</button>
+                <button onclick="openInfoPage('rating')" class="hover:text-theme-main">How We Rate</button>
+                <button onclick="openInfoPage('privacy')" class="hover:text-theme-main">Privacy Policy</button>
+                <button onclick="openInfoPage('terms')" class="hover:text-theme-main">Terms of Use</button>
+                <button onclick="openInfoPage('disclaimer')" class="hover:text-theme-main">Disclaimer</button>
+                <button onclick="openInfoPage('contact')" class="hover:text-theme-main">Contact</button>
+            </div>
 
             <!-- Dynamic Credit & Copyright Text (Editable from Admin Panel) -->
             <div class="pt-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-theme-muted text-center sm:text-left">
+                <p class="sm:hidden text-[11px]">Ratings are editorial opinions. Posters and images belong to their respective owners.</p>
                 <p id="footerCopyrightText">© 2026 CINEGUIDE. All rights reserved.</p>
                 <p id="footerCreditText" class="font-medium">
                     Designed & Developed with ❤️ by <span class="text-theme-main font-bold accent-text">Indra Mondal</span>
@@ -561,6 +594,15 @@
     </footer>
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <!-- core-data/: demo posts + data layer (separate from the UI, no need to edit) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="core-data/firebase-config.js"></script>
+    <script src="core-data/firebase-sync.js"></script>
+    <script src="core-data/config.js"></script>
+    <script src="core-data/demo-data.js"></script>
+    <script src="core-data/store.js"></script>
     <script>
         // --- 1. ACTORS DATABASE ---
         const actorsDB = {
@@ -625,216 +667,9 @@
         };
 
         // --- 2. MOVIES, SERIES & SHOWS DATABASE ---
-        const now = Date.now();
-        const defaultReviews = [
-            {
-                id: "rev-1",
-                title: "The Ugly",
-                year: "2025",
-                tagline: "No secret stays buried forever.",
-                category: "Movie",
-                industry: "Korean Movies",
-                breadcrumb: "MOVIES › KOREAN MOVIES",
-                language: "Korean",
-                rating: "6.6",
-                ageRating: "PG-13",
-                duration: "1h 42m",
-                platform: "AMZN",
-                uploadedAt: now - (4 * 60 * 60 * 1000),
-                baseViews: 472,
-                safetyLevel: "Moderate",
-                director: "Yeon Sang-ho",
-                writers: "Yeon Sang-ho, Ryu Yong-jae",
-                releaseFullDate: "15 Oct 2025",
-                country: "South Korea",
-                backdrop: "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1200&q=80",
-                poster: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&w=600&q=80",
-                stills: [
-                    "https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1200&q=80",
-                    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80"
-                ],
-                trailerUrl: "",
-                genres: ["Mystery", "Thriller"],
-                tags: ["Korean Movies", "Korean", "2025", "Zero Nudity", "Mystery", "Thriller"],
-                summary: "After the skeletal remains of a long-missing woman are uncovered after 40 years, her son and a documentary producer dig into the chilling secrets buried by their family and town.",
-                parentalGuide: {
-                    sexNudity: "None — Zero nudity or sexual scenes.",
-                    violence: "Moderate — Tense confrontations, skeletal remains, and dark murder investigation themes.",
-                    profanity: "Mild — Occasional tense dialogue.",
-                    drugsAlcohol: "Mild — Social drinking scenes."
-                },
-                verdict: "Clean from explicit scenes; safe for mature teens (14+) and mystery lovers.",
-                cast: [
-                    { actorId: "park-jeong-min", name: "Park Jeong-min", character: "Im Dong-hwan", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=500&q=80" },
-                    { actorId: "kwon-hae-hyo", name: "Kwon Hae-hyo", character: "Im Yeong-gyu", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=500&q=80" }
-                ],
-                episodes: [],
-                defaultComments: [
-                    { user: "Rahul S.", text: "Watched with parents, no awkward scenes at all! Great suspense.", time: "1 hour ago" }
-                ]
-            },
-            {
-                id: "rev-2",
-                title: "Ali Baba Aur 40 Bhoot",
-                year: "2026",
-                tagline: "Spooky comedy adventure for the whole family.",
-                category: "TV Series",
-                industry: "Hindi TV Series",
-                breadcrumb: "TV SERIES › HINDI TV SERIES",
-                language: "Hindi",
-                rating: "7.4",
-                ageRating: "TV-14",
-                duration: "1 Season",
-                platform: "JHS",
-                uploadedAt: now - (9 * 60 * 60 * 1000),
-                baseViews: 396,
-                safetyLevel: "Safe",
-                director: "Kenny Basumatary",
-                writers: "Bhuvanesh Shrivastava, Jitesh Ramakrishnan",
-                releaseFullDate: "11 Sep 2026",
-                country: "India",
-                backdrop: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80",
-                poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=600&q=80",
-                stills: [
-                    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80",
-                    "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1200&q=80"
-                ],
-                trailerUrl: "https://www.youtube.com/embed/ga0iTWXCGa0",
-                genres: ["Comedy", "Mystery"],
-                tags: ["Hindi TV Series", "Hindi", "2026", "Zero Nudity", "Comedy", "Mystery"],
-                summary: "A quirky group of friends accidentally unlocks an ancient haveli haunted by forty mischievous ghosts, leading to hilarious chaos and mystery.",
-                parentalGuide: {
-                    sexNudity: "None — 100% family clean.",
-                    violence: "Mild — Slapstick spooky comedy scenes.",
-                    profanity: "None — Clean humour.",
-                    drugsAlcohol: "None."
-                },
-                verdict: "Fun horror-comedy suitable for watching together with family.",
-                cast: [
-                    { actorId: "omar-sy", name: "Asha Negi", character: "Lead Role", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80" },
-                    { actorId: "ludivine-sagnier", name: "Vishal Vashishtha", character: "Ali", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80" }
-                ],
-                episodes: [
-                    { ep: 1, title: "Episode 1: The Haveli Door", rating: "7.8", desc: "Ali and his friends step inside the locked mansion.", thumb: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80" },
-                    { ep: 2, title: "Episode 2: Ghostly Guests", rating: "7.6", desc: "The 40 ghosts reveal their hilarious secret pact.", thumb: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80" }
-                ],
-                defaultComments: []
-            },
-            {
-                id: "rev-3",
-                title: "Invictus",
-                year: "2009",
-                tagline: "His people needed a leader. He gave them a champion.",
-                category: "Movie",
-                industry: "Hollywood",
-                breadcrumb: "MOVIES › HOLLYWOOD",
-                language: "English",
-                rating: "7.3",
-                ageRating: "PG-13",
-                duration: "2h 14m",
-                platform: "BluRay",
-                uploadedAt: now - (5 * 60 * 60 * 1000),
-                baseViews: 157,
-                safetyLevel: "Safe",
-                director: "Clint Eastwood",
-                writers: "Anthony Peckham, John Carlin",
-                releaseFullDate: "11 Dec 2009",
-                country: "USA",
-                backdrop: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80",
-                poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80",
-                stills: [
-                    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80"
-                ],
-                trailerUrl: "https://www.youtube.com/embed/ByXuk9QqQkk",
-                genres: ["Biography", "Drama", "Sport"],
-                tags: ["Hollywood", "English", "Zero Nudity", "Family Safe"],
-                summary: "Nelson Mandela, in his first term as President of South Africa, initiates a unique venture to unite the Apartheid-torn land: enlist the national rugby team on a mission to win the 1995 Rugby World Cup.",
-                parentalGuide: {
-                    sexNudity: "None — 100% clean.",
-                    violence: "Mild — Standard sports rugby tackles.",
-                    profanity: "Mild — Very brief sports locker room language.",
-                    drugsAlcohol: "Very Mild."
-                },
-                verdict: "Inspirational true story — highly recommended for family viewing.",
-                cast: [
-                    { actorId: "omar-sy", name: "Morgan Freeman", character: "Nelson Mandela", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80" }
-                ],
-                episodes: [],
-                defaultComments: []
-            },
-            {
-                id: "rev-4",
-                title: "Spirited Horizons",
-                year: "2026",
-                tagline: "Beyond the clouds lies the forgotten realm.",
-                category: "Anime",
-                industry: "Anime Movies",
-                breadcrumb: "ANIME › JAPANESE ANIME",
-                language: "Japanese",
-                rating: "8.9",
-                ageRating: "G",
-                duration: "2h 05m",
-                platform: "CR",
-                uploadedAt: now - (24 * 60 * 60 * 1000),
-                baseViews: 1241,
-                safetyLevel: "Safe",
-                director: "Makoto Shinkai",
-                writers: "Makoto Shinkai",
-                releaseFullDate: "02 May 2026",
-                country: "Japan",
-                backdrop: "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1200&q=80",
-                poster: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80",
-                stills: [
-                    "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1200&q=80"
-                ],
-                trailerUrl: "https://www.youtube.com/embed/ByXuk9QqQkk",
-                genres: ["Adventure", "Fantasy"],
-                tags: ["Anime Movies", "Japanese", "2026", "Zero Nudity", "Action"],
-                summary: "A young village boy discovers an ancient sky-lantern that guides him to a floating island of forgotten spirits, teaching him courage and kindness.",
-                parentalGuide: {
-                    sexNudity: "None — 100% clean and wholesome.",
-                    violence: "None — Harmless fantasy adventure.",
-                    profanity: "None.",
-                    drugsAlcohol: "None."
-                },
-                verdict: "100% Kids & Family Safe masterpiece.",
-                cast: [
-                    { actorId: "park-jeong-min", name: "Kenjiro Tsuda", character: "Spirit Guardian (Voice)", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=500&q=80" }
-                ],
-                episodes: [],
-                defaultComments: []
-            }
-        ];
-
-        // --- 3. DEFAULT UPCOMING RELEASES (Points 10 & 20) ---
-        const defaultUpcoming = [
-            {
-                id: "up-1",
-                title: "The Runner: Reckoning",
-                year: "2026",
-                releaseDate: "November 14, 2026",
-                type: "Movie",
-                releaseWhere: "In Theaters & IMAX",
-                expectedSafety: "PG-13 (Expected)",
-                rating: "TBA",
-                backdrop: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=900&q=80",
-                poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80",
-                note: "High-octane sci-fi sequel arriving in theaters nationwide."
-            },
-            {
-                id: "up-2",
-                title: "Shadows of Seoul: Season 2",
-                year: "2026",
-                releaseDate: "December 05, 2026",
-                type: "Web Series",
-                releaseWhere: "Netflix Official",
-                expectedSafety: "18+ Caution",
-                rating: "TBA",
-                backdrop: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=900&q=80",
-                poster: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
-                note: "The acclaimed Korean crime drama returns for its second chapter."
-            }
-        ];
+        // Demo posts & demo upcoming releases now live in core-data/demo-data.js
+        const defaultReviews = (window.CINE_DEMO && window.CINE_DEMO.reviews) || [];
+        const defaultUpcoming = (window.CINE_DEMO && window.CINE_DEMO.upcoming) || [];
 
         // --- 4. DRAWER BROWSE SUB-CATEGORIES MAP (Point 11 Fixed: Matches Video 2) ---
         const drawerBrowseMap = {
@@ -881,6 +716,7 @@
         }
         function safeSave(key, val) {
             try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { console.warn('Storage error', e); }
+            if (window.CineSync) window.CineSync.onLocalSave(key);
         }
         function safeText(key) {
             try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -900,6 +736,8 @@
         }
         function getCustomReviews() { return mergeById(safeParse('cineguide_custom_reviews', []), siteData.reviews); }
         function getCustomUpcoming() { return mergeById(safeParse('cineguide_upcoming', []), siteData.upcoming); }
+        // ids deleted from the admin panel (this browser + site-data.json) never show again
+        function dropDeleted(list) { return CineStore.withoutDeleted(list, siteData.deleted); }
         function getCustomCategories() {
             const all = [...safeParse('cineguide_custom_categories', []), ...(siteData.categories || [])];
             return [...new Set(all)];
@@ -983,6 +821,133 @@
             1: "Awful", 2: "Terrible", 3: "Bad", 4: "Poor", 5: "Mixed",
             6: "Fine", 7: "Good", 8: "Very good", 9: "Great", 10: "Masterpiece"
         };
+
+
+        // ===== PROFESSIONAL UPGRADE PACK =====
+        function scoreNum(item) { const n = parseFloat(item.rating); return isNaN(n) ? null : n; }
+        function scoreBadge(item, small) {
+            const n = scoreNum(item);
+            if (n === null) return '';
+            const c = n >= 7.5 ? '#16a34a' : (n >= 6 ? '#d97706' : '#dc2626');
+            const sz = small ? 'w-9 h-9 text-[11px]' : 'w-11 h-11 text-sm';
+            return `<span class="${sz} rounded-full flex items-center justify-center font-black text-white border-2 shadow-lg" style="background:${c}cc;border-color:${c}" title="Score ${n}/10">${n.toFixed(1)}</span>`;
+        }
+        function renderSpotlight() {
+            const box = document.getElementById('spotlightSection');
+            if (!box) return;
+            const unfiltered = allReviews.length > 2 && filteredReviews.length === allReviews.length;
+            if (!unfiltered) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+            const ranked = [...allReviews].filter(r => scoreNum(r) !== null).sort((a, b) => scoreNum(b) - scoreNum(a));
+            if (!ranked.length) { box.classList.add('hidden'); return; }
+            const top = ranked[0];
+            const rail = ranked.slice(0, 10).map((r, i) => `
+                <div onclick="openDetailView('${esc(r.id)}')" class="shrink-0 w-32 sm:w-36 cursor-pointer group">
+                    <div class="relative aspect-[2/3] rounded-xl overflow-hidden border border-theme bg-theme-card">
+                        <img src="${esc(r.poster || r.backdrop)}" alt="${esc(r.title)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        <span class="absolute top-0 left-0 px-2 py-0.5 rounded-br-xl bg-rose-600 text-white text-xs font-black">#${i + 1}</span>
+                        <span class="absolute bottom-1.5 right-1.5">${scoreBadge(r, true)}</span>
+                    </div>
+                    <p class="mt-1.5 text-xs font-bold text-theme-main truncate">${esc(r.title)}</p>
+                    <p class="text-[11px] text-theme-muted">${esc(r.year)} • ${esc(r.category)}</p>
+                </div>`).join('');
+            box.innerHTML = `
+                <article onclick="openDetailView('${esc(top.id)}')" class="relative rounded-3xl overflow-hidden cursor-pointer border border-theme shadow-xl group mb-6">
+                    <img src="${esc(top.backdrop)}" alt="${esc(top.title)}" class="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition duration-700">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent"></div>
+                    <div class="absolute inset-x-0 bottom-0 p-5 sm:p-7 text-white">
+                        <span class="inline-block px-2.5 py-1 rounded-full bg-rose-600 text-[10px] font-extrabold uppercase tracking-widest mb-2">Editor's Pick • Top Rated</span>
+                        <h2 class="text-2xl sm:text-4xl font-black leading-tight">${esc(top.title)} <span class="text-base font-semibold opacity-70">${esc(top.year)}</span></h2>
+                        <p class="text-xs sm:text-sm text-gray-300 mt-1.5 line-clamp-2 max-w-2xl">${esc(top.summary)}</p>
+                        <div class="flex items-center gap-3 mt-3">
+                            <span class="px-5 py-2.5 rounded-xl bg-white text-black text-xs sm:text-sm font-extrabold">Read Review</span>
+                            ${scoreBadge(top)}
+                            <span class="text-xs text-gray-300">${esc((top.genres || []).slice(0, 3).join(' • '))}</span>
+                        </div>
+                    </div>
+                </article>
+                <div class="flex items-center justify-between mb-3"><h2 class="text-lg font-extrabold text-theme-main">Top Rated</h2><span class="text-[11px] text-theme-muted">Ranked by score</span></div>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">${rail}</div>
+                <div class="flex items-center justify-between mt-6 mb-1"><h2 class="text-lg font-extrabold text-theme-main">Latest Reviews</h2></div>`;
+            box.classList.remove('hidden');
+        }
+        const _renderAllGrids = renderAllGrids;
+        renderAllGrids = function () { _renderAllGrids(); renderSpotlight(); lucide.createIcons(); };
+
+        // Per-review SEO: description, Open Graph, JSON-LD Review schema, share bar
+        const DEFAULT_TITLE = document.title;
+        function setMeta(sel, attr, val) { const m = document.querySelector(sel); if (m) m.setAttribute(attr, val); }
+        function shareCurrent() {
+            const it = currentDetailItem; if (!it) return;
+            const url = location.href, text = `${it.title} (${it.year}) — ★ ${it.rating}`;
+            if (navigator.share) { navigator.share({ title: text, url }).catch(() => {}); return; }
+            (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => showToast('Link copied'), () => showToast(url));
+        }
+        function enhanceDetail() {
+            const it = currentDetailItem, box = document.getElementById('detailContent');
+            if (!it || it.isUpcoming || !box || box.querySelector('#detailTopBar')) return;
+            const bar = document.createElement('div');
+            bar.id = 'detailTopBar';
+            bar.className = 'flex items-center justify-between gap-3 px-4 py-2.5 text-xs text-theme-muted';
+            bar.innerHTML = `<nav aria-label="Breadcrumb" class="truncate"><button onclick="goHome()" class="hover:text-theme-main">Home</button> › <button onclick="filterByMainCategory('${esc(it.category)}')" class="hover:text-theme-main">${esc(it.category)}</button> › <span class="text-theme-main font-semibold">${esc(it.title)}</span></nav>
+                <button onclick="shareCurrent()" class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-theme-card border border-theme text-theme-main font-bold hover:border-rose-500/50"><i data-lucide="share-2" class="w-3.5 h-3.5"></i> Share</button>`;
+            box.prepend(bar);
+            lucide.createIcons();
+            const desc = (it.summary || '').slice(0, 155);
+            setMeta('meta[name="description"]', 'content', desc);
+            setMeta('meta[property="og:title"]', 'content', `${it.title} (${it.year}) Review — CINEGUIDE`);
+            setMeta('meta[property="og:description"]', 'content', desc);
+            let og = document.querySelector('meta[property="og:image"]');
+            if (!og) { og = document.createElement('meta'); og.setAttribute('property', 'og:image'); document.head.appendChild(og); }
+            og.setAttribute('content', it.backdrop || it.poster || '');
+            let ld = document.getElementById('reviewLd');
+            if (!ld) { ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.id = 'reviewLd'; document.head.appendChild(ld); }
+            const n = scoreNum(it);
+            ld.textContent = JSON.stringify({
+                '@context': 'https://schema.org', '@type': 'Review',
+                itemReviewed: { '@type': it.category === 'Movie' ? 'Movie' : 'TVSeries', name: it.title, image: it.poster || it.backdrop, datePublished: it.year, genre: it.genres },
+                reviewBody: it.verdict || it.summary, author: { '@type': 'Organization', name: 'CINEGUIDE' },
+                ...(n !== null ? { reviewRating: { '@type': 'Rating', ratingValue: n, bestRating: 10, worstRating: 1 } } : {})
+            });
+        }
+        const _renderDetailContent = renderDetailContent;
+        renderDetailContent = function () { _renderDetailContent(); enhanceDetail(); };
+        const _switchView = switchView;
+        switchView = function (v) {
+            _switchView(v);
+            if (v !== 'detail') {
+                document.title = DEFAULT_TITLE;
+                setMeta('meta[name="description"]', 'content', 'Honest movie, web series and anime reviews with ratings, cast details and a complete family parental guide.');
+                const ld = document.getElementById('reviewLd'); if (ld) ld.remove();
+            }
+        };
+
+        // Info pages (About / Privacy / Terms ...)
+        const INFO_PAGES = {
+            about: ['About CINEGUIDE', '<p>CINEGUIDE publishes honest reviews of movies, web series and anime, along with a detailed parental guide so families can decide what is right to watch together.</p><p>Every review is written by our editors and updated when new information becomes available.</p>'],
+            rating: ['How We Rate', '<p><b class="text-theme-main">Score (1–10):</b> reflects story, acting, direction and overall experience. 7.5+ is highly recommended, 6–7.4 is worth watching, below 6 is for fans of the genre only.</p><p><b class="text-theme-main">Parental guide:</b> we describe nudity, violence, profanity and substance use so you can judge for yourself. Safety labels are Family Safe, PG-13 Caution and 18+ Strict.</p>'],
+            privacy: ['Privacy Policy', '<p>Your watchlist, ratings, comments and account name are stored on your own device (local storage). If you sign in with Google, your watchlist, watched list and ratings are also saved to your private cloud account so they follow you across devices. We do not sell personal data.</p><p>Third-party services such as fonts, video embeds and advertising partners may set their own cookies. You can clear your browser data at any time.</p>'],
+            terms: ['Terms of Use', '<p>Content on this site is provided for information and entertainment. Please keep comments respectful; abusive or spam comments may be removed.</p><p>Reviews are editorial opinions and may differ from yours.</p>'],
+            disclaimer: ['Disclaimer', '<p>CINEGUIDE does not host or stream any movies or series. Posters, stills and trailers belong to their respective copyright owners and are used for review and commentary purposes.</p><p>Parental guide notes are editorial summaries and may not cover every scene.</p>'],
+            contact: ['Contact Us', '<p>For corrections, takedown requests or business enquiries, email us at <b class="text-theme-main">contact@yourdomain.com</b>.</p>']
+        };
+        function openInfoPage(k) {
+            const d = INFO_PAGES[k]; if (!d) return;
+            document.getElementById('infoTitle').textContent = d[0];
+            document.getElementById('infoBody').innerHTML = d[1];
+            const m = document.getElementById('infoModal'); m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function closeInfoPage() { const m = document.getElementById('infoModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+        // Back-to-top + lazy images
+        window.addEventListener('scroll', () => {
+            const b = document.getElementById('backToTopBtn'); if (!b) return;
+            const show = window.scrollY > 700;
+            b.classList.toggle('hidden', !show); b.classList.toggle('flex', show);
+        }, { passive: true });
+        new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+            if (n.nodeType !== 1) return;
+            (n.tagName === 'IMG' ? [n] : n.querySelectorAll ? n.querySelectorAll('img') : []).forEach(i => { if (!i.hasAttribute('loading')) { i.loading = 'lazy'; i.decoding = 'async'; } });
+        }))).observe(document.body, { childList: true, subtree: true });
 
         // --- 6. INITIALIZATION ---
         window.addEventListener('DOMContentLoaded', async () => {
@@ -1125,9 +1090,9 @@
         }
 
         function loadReviewsData() {
-            allReviews = [...getCustomReviews(), ...defaultReviews].map(normalizeReview);
+            allReviews = dropDeleted(mergeById(getCustomReviews(), defaultReviews)).map(normalizeReview);
             filteredReviews = [...allReviews];
-            upcomingList = [...getCustomUpcoming(), ...defaultUpcoming];
+            upcomingList = dropDeleted(mergeById(getCustomUpcoming(), defaultUpcoming));
         }
 
         // Point 17 Fixed: High-contrast active & inactive states in both Light and Dark mode
@@ -1303,6 +1268,7 @@
                         ${esc(item.platform || 'HD')}
                     </span>
 
+                    <span class="absolute bottom-3 right-3">${scoreBadge(item)}</span>
                     <!-- Title Overlay -->
                     <div class="absolute inset-x-4 bottom-3">
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-300 block mb-0.5">${esc(item.industry)}</span>
@@ -1347,6 +1313,7 @@
                     <img src="${item.poster || item.backdrop}" alt="${esc(item.title)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                     
+                    <span class="absolute top-2.5 right-2.5">${scoreBadge(item,true)}</span>
                     <span class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-bold text-white border border-white/10">
                         ${esc(item.platform || 'HD')}
                     </span>
@@ -2500,7 +2467,28 @@
             showToast(`Signed in as ${name}`);
         }
 
+        function applyCloudUser(name, email) {
+            const initials = (name.split(/\s+/).filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2)) || 'G';
+            currentUser = { name, email, initials };
+            safeSave('cineguide_user', currentUser);
+            updateUserUI();
+            closeAuthModal();
+            showToast(`Signed in as ${name}`);
+        }
+
+        function reloadUserLibrary() {
+            watchlistIds = safeParse('cineguide_watchlist', []);
+            watchedIds = safeParse('cineguide_watched', []);
+            userRatings = safeParse('cineguide_user_ratings', {});
+            notifyUpcomingIds = safeParse('cineguide_notify_upcoming', []);
+            updateWatchlistCounters();
+            renderAllGrids();
+            try { if (!document.getElementById('watchlistView').classList.contains('hidden')) renderWatchlistView(); } catch (e) {}
+            lucide.createIcons();
+        }
+
         function signOut() {
+            if (window.CineSync) window.CineSync.signOut();
             currentUser = null;
             try { localStorage.removeItem('cineguide_user'); } catch (e) {}
             updateUserUI();

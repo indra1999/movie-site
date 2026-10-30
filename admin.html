@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CINEGUIDE — Secret Admin Panel</title>
+    <title>CINEGUIDE — Admin Panel</title>
+    <meta name="robots" content="noindex,nofollow">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>window.lucide = window.lucide || { createIcons: function () {} };</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-thumb { background: #2a2e3f; border-radius: 8px; }
+        input:focus, textarea:focus, select:focus { outline: none; box-shadow: 0 0 0 2px rgba(225,29,72,.45); }
         body { font-family: 'Inter', sans-serif; background-color: #090a0f; color: #f8fafc; }
         .bg-card { background-color: #12141d; }
         .bg-elevated { background-color: #1b1e2b; }
@@ -57,8 +61,12 @@
                 </div>
 
                 <!-- Navigation Tabs (Added Manage Posts Tab) -->
+                <button onclick="openCommandPalette()" class="hidden lg:flex w-full items-center justify-between mb-3 px-3 py-2 rounded-xl bg-elevated text-[11px] text-slate-400 hover:text-white"><span class="flex items-center gap-2"><i data-lucide="search" class="w-3.5 h-3.5"></i> Quick search</span><span>Ctrl K</span></button>
                 <nav class="flex lg:flex-col gap-1.5 overflow-x-auto no-scrollbar">
-                    <button onclick="switchAdminTab('posts')" id="navBtn-posts" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap">
+                    <button onclick="switchAdminTab('dashboard')" id="navBtn-dashboard" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+                    </button>
+                    <button onclick="switchAdminTab('posts')" id="navBtn-posts" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Post
                     </button>
                     <button onclick="switchAdminTab('manage')" id="navBtn-manage" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
@@ -88,7 +96,8 @@
 
         <!-- RIGHT CONTENT AREA -->
         <main class="flex-1 p-4 sm:p-7 overflow-y-auto max-w-6xl mx-auto w-full">
-            <section id="tabSection-posts" class="admin-tab-section"></section>
+            <section id="tabSection-dashboard" class="admin-tab-section"></section>
+            <section id="tabSection-posts" class="admin-tab-section hidden"></section>
             <section id="tabSection-manage" class="admin-tab-section hidden"></section>
             <section id="tabSection-upcoming" class="admin-tab-section hidden"></section>
             <section id="tabSection-categories" class="admin-tab-section hidden"></section>
@@ -150,6 +159,7 @@
             document.getElementById('adminLockScreen').classList.add('hidden');
             document.getElementById('adminAppWrapper').classList.remove('hidden');
             initAllAdminModules();
+            switchAdminTab('dashboard');
         }
 
         function logoutAdmin() {
@@ -167,6 +177,7 @@
             document.getElementById(`navBtn-${tabName}`).className = "admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold accent-bg text-white whitespace-nowrap";
             
             // Refresh manage posts list if switching to manage tab
+            if (tabName === 'dashboard' && typeof renderAdminDashboard === 'function') renderAdminDashboard();
             if (tabName === 'manage' && typeof renderAdminPublishedPosts === 'function') {
                 renderAdminPublishedPosts();
             }
@@ -199,7 +210,13 @@
         });
     </script>
 
+    <!-- DATA LAYER (separate folder: posts, comments, API key live here) -->
+    <script src="core-data/config.js"></script>
+    <script src="core-data/demo-data.js"></script>
+    <script src="core-data/store.js"></script>
+
     <!-- MODULAR FEATURE SCRIPTS -->
+    <script src="admin-modules/dashboard.js"></script>
     <script src="admin-modules/posts-api.js"></script>
     <script src="admin-modules/upcoming.js"></script>
     <script src="admin-modules/categories-ads.js"></script>
