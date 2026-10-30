@@ -1235,8 +1235,25 @@
             lucide.createIcons();
         }
 
+        // Keep Binging (inside a post): related titles, shown with the same card style as Home
+        function renderKeepBinging() {
+            const grid = document.getElementById('keepBingingGrid');
+            if (!grid || !currentDetailItem || currentDetailItem.isUpcoming) return;
+            const related = allReviews.filter(r => r.id !== currentDetailItem.id).slice(0, 6);
+            if (!related.length) { grid.innerHTML = ''; return; }
+            if (currentLayoutMode === 'grid2') {
+                grid.className = "grid grid-cols-2 gap-4";
+                grid.innerHTML = related.map(i => createPortraitCardHTML(i)).join('');
+            } else {
+                grid.className = "grid grid-cols-1 sm:grid-cols-2 gap-5";
+                grid.innerHTML = related.map(i => createSingleWideCardHTML(i)).join('');
+            }
+            lucide.createIcons();
+        }
+
         function renderAllGrids() {
             renderHomeGrid();
+            renderKeepBinging();
             renderUpcomingGrids();
             if (!document.getElementById('watchlistView').classList.contains('hidden')) {
                 renderWatchlistView();
@@ -1969,27 +1986,18 @@
 
                     <div id="adDetailSlot" class="hidden mb-8 overflow-hidden flex justify-center"></div>
 
-                    <!-- KEEP BINGING SECTION -->
+                    <!-- KEEP BINGING SECTION (same cards + Single/2-Col switch as the Home page) -->
                     <div>
-                        <h2 class="text-lg font-extrabold text-theme-main mb-3">Keep Binging</h2>
-                        <div class="grid grid-cols-2 gap-3.5">
-                            ${relatedItems.slice(0, 4).map(rel => `
-                                <div onclick="openDetailView('${esc(rel.id)}')" class="cursor-pointer group">
-                                    <div class="relative h-28 sm:h-36 rounded-2xl overflow-hidden bg-theme-card border border-theme mb-1.5">
-                                        <img src="${esc(rel.backdrop)}" class="w-full h-full object-cover group-hover:scale-105 transition">
-                                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                                        <span class="absolute bottom-2 left-2.5 text-sm font-black text-white uppercase">${esc(rel.title)}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-[11px] text-theme-muted">
-                                        <span class="px-1.5 py-0.5 rounded bg-theme-card border border-theme text-amber-500 font-bold">★ ${esc(rel.rating)}</span>
-                                        <span>${esc(rel.year)} • ${esc(rel.category.toUpperCase())}</span>
-                                    </div>
-                                </div>
-                            `).join('')}
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <h2 class="text-lg font-extrabold text-theme-main">Keep Binging</h2>
+                            <button onclick="toggleLayoutMode()" class="layout-toggle-btn shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main hover:border-rose-500/50 transition"></button>
                         </div>
+                        <div id="keepBingingGrid" class="grid grid-cols-1 gap-5"></div>
                     </div>
                 </div>
             `;
+            renderKeepBinging();
+            updateLayoutToggleButtonsUI();
             injectAd('adDetailSlot', getAdsConfig().detailBanner);
             lucide.createIcons();
         }
