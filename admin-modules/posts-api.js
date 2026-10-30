@@ -164,22 +164,161 @@ function renderAddPostFormTab() {
     if (typeof renderCastPreview === 'function') renderCastPreview();
 }
 
+// ===================== MANAGE PUBLISHED POSTS (site-style cards + search + filters) =====================
+const manageState = { q: '', category: '', industry: '', safety: '', sort: 'newest', layout: 'single', filtersOpen: false };
+
+function adminTimeAgo(ts) {
+    if (!ts) return 'Recently';
+    const sec = Math.floor((Date.now() - ts) / 1000);
+    if (sec < 60) return 'Just now';
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min} min${min > 1 ? 's' : ''} ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr} hour${hr > 1 ? 's' : ''} ago`;
+    const d = Math.floor(hr / 24);
+    return `${d} day${d > 1 ? 's' : ''} ago`;
+}
+
 function renderManagePostsTab() {
     const container = document.getElementById('tabSection-manage');
+    const inputCls = 'w-full px-3 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs font-bold text-slate-200 focus:outline-none focus:border-rose-500';
     container.innerHTML = `
-        <div class="mb-6 flex items-center justify-between">
+        <div class="mb-5 flex items-center justify-between gap-3">
             <div>
                 <h2 class="text-2xl font-black">Manage Published Posts</h2>
-                <p class="text-xs text-slate-400 mt-1">View all your published posts with posters, edit details or delete instantly.</p>
+                <p class="text-xs text-slate-400 mt-1">Search, filter, edit or delete your published posts.</p>
             </div>
-            <button onclick="switchAdminTab('posts')" class="px-4 py-2 rounded-xl accent-bg text-xs font-bold text-white flex items-center gap-1.5 shadow">
+            <button onclick="switchAdminTab('posts')" class="px-4 py-2 rounded-xl accent-bg text-xs font-bold text-white flex items-center gap-1.5 shadow shrink-0">
                 <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add New Post
             </button>
         </div>
 
-        <div id="adminPublishedPostsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+        <!-- SEARCH BAR -->
+        <div class="relative mb-4">
+            <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input type="text" id="manageSearchInput" value="${esc(manageState.q)}" oninput="onManageSearch(this.value)"
+                placeholder="Search movies, series, anime or actor..."
+                class="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-card border border-subtle text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-rose-500">
+            <button type="button" id="manageSearchClear" onclick="clearManageSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/10 text-slate-300 text-sm leading-6">×</button>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div class="rounded-3xl bg-card border border-subtle p-4 mb-5">
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-sm text-slate-400">Filtered by:</p>
+                    <p id="manageFilteredBy" class="text-sm font-semibold text-slate-200 truncate">All posts</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="toggleManageFilters()" class="px-3.5 py-2.5 rounded-xl bg-white/5 border border-subtle text-sm font-bold text-slate-100 flex items-center gap-2">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4 text-rose-500"></i> Filters
+                        <i data-lucide="chevron-down" id="manageFiltersChevron" class="w-3.5 h-3.5 transition-transform"></i>
+                    </button>
+                    <button type="button" id="manageLayoutBtn" onclick="toggleManageLayout()" class="px-3.5 py-2.5 rounded-xl bg-white/5 border border-subtle text-sm font-bold text-slate-100 flex items-center gap-2"></button>
+                </div>
+            </div>
+
+            <div id="manageFilterPanel" class="hidden mt-4 pt-4 border-t border-subtle">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block mb-1">Category</label>
+                        <select id="manageFilterCategory" onchange="onManageFilterChange()" class="${inputCls}"></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block mb-1">Industry</label>
+                        <select id="manageFilterIndustry" onchange="onManageFilterChange()" class="${inputCls}"></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block mb-1">Safety</label>
+                        <select id="manageFilterSafety" onchange="onManageFilterChange()" class="${inputCls}">
+                            <option value="">All</option>
+                            <option value="Safe">Family Safe</option>
+                            <option value="Moderate">Moderate (PG-13)</option>
+                            <option value="Strict">Strict (18+)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block mb-1">Sort by</label>
+                        <select id="manageFilterSort" onchange="onManageFilterChange()" class="${inputCls}">
+                            <option value="newest">Newest first</option>
+                            <option value="oldest">Oldest first</option>
+                            <option value="rating">Top rated</option>
+                            <option value="views">Most views</option>
+                            <option value="title">Title A–Z</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" onclick="resetManageFilters()" class="mt-3 text-xs text-rose-400 hover:underline">Reset all filters</button>
+            </div>
+        </div>
+
+        <p id="manageCountLine" class="text-[11px] text-slate-500 mb-3"></p>
+        <div id="adminPublishedPostsGrid" class="grid grid-cols-1 gap-5"></div>
     `;
     renderAdminPublishedPosts();
+}
+
+function onManageSearch(v) { manageState.q = v; renderAdminPublishedPosts(); }
+function clearManageSearch() {
+    manageState.q = '';
+    const el = document.getElementById('manageSearchInput');
+    if (el) { el.value = ''; el.focus(); }
+    renderAdminPublishedPosts();
+}
+function toggleManageFilters() {
+    manageState.filtersOpen = !manageState.filtersOpen;
+    syncManageControls();
+}
+function toggleManageLayout() {
+    manageState.layout = manageState.layout === 'single' ? 'grid2' : 'single';
+    renderAdminPublishedPosts();
+}
+function onManageFilterChange() {
+    manageState.category = document.getElementById('manageFilterCategory').value;
+    manageState.industry = document.getElementById('manageFilterIndustry').value;
+    manageState.safety = document.getElementById('manageFilterSafety').value;
+    manageState.sort = document.getElementById('manageFilterSort').value;
+    renderAdminPublishedPosts();
+}
+function resetManageFilters() {
+    manageState.q = ''; manageState.category = ''; manageState.industry = ''; manageState.safety = ''; manageState.sort = 'newest';
+    const el = document.getElementById('manageSearchInput');
+    if (el) el.value = '';
+    renderAdminPublishedPosts();
+}
+
+// keep dropdown options in sync with what is actually published
+function refreshManageFilterOptions(list) {
+    const fill = (id, label, values, current) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const uniq = [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        el.innerHTML = `<option value="">${label}</option>` + uniq.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+        el.value = uniq.includes(current) ? current : '';
+    };
+    fill('manageFilterCategory', 'All', list.map(p => p.category), manageState.category);
+    fill('manageFilterIndustry', 'All', list.map(p => p.industry), manageState.industry);
+    // if a previously selected value no longer exists, drop it from state
+    manageState.category = (document.getElementById('manageFilterCategory') || {}).value || '';
+    manageState.industry = (document.getElementById('manageFilterIndustry') || {}).value || '';
+    const sf = document.getElementById('manageFilterSafety'); if (sf) sf.value = manageState.safety;
+    const so = document.getElementById('manageFilterSort'); if (so) so.value = manageState.sort;
+}
+
+function syncManageControls() {
+    const panel = document.getElementById('manageFilterPanel');
+    if (panel) panel.classList.toggle('hidden', !manageState.filtersOpen);
+    const chev = document.getElementById('manageFiltersChevron');
+    if (chev) chev.style.transform = manageState.filtersOpen ? 'rotate(180deg)' : '';
+    const lay = document.getElementById('manageLayoutBtn');
+    if (lay) {
+        lay.innerHTML = manageState.layout === 'single'
+            ? `<i data-lucide="layout-grid" class="w-4 h-4 text-rose-500"></i> <span>2-Col Grid</span>`
+            : `<i data-lucide="square" class="w-4 h-4 text-rose-500"></i> <span>Single View</span>`;
+    }
+    const clr = document.getElementById('manageSearchClear');
+    if (clr) clr.classList.toggle('hidden', !manageState.q);
+    lucide.createIcons();
 }
 
 function generateSEOSlug(title, year) {
@@ -531,40 +670,124 @@ function saveOrUpdateReviewPost(e) {
 }
 
 function renderAdminPublishedPosts() {
-    const list = safeParse('cineguide_custom_reviews', []);
+    const all = safeParse('cineguide_custom_reviews', []);
     const grid = document.getElementById('adminPublishedPostsGrid');
     if (!grid) return;
-    
-    if (list.length === 0) {
+
+    refreshManageFilterOptions(all);
+
+    if (all.length === 0) {
+        grid.className = 'grid grid-cols-1 gap-5';
         grid.innerHTML = `<div class="col-span-full p-10 text-center rounded-2xl bg-card border border-subtle">
             <p class="text-xs text-slate-400 mb-2">No custom posts created yet.</p>
             <button onclick="switchAdminTab('posts')" class="px-4 py-2 rounded-xl accent-bg text-white font-bold text-xs">Create First Post</button>
         </div>`;
+        const cl = document.getElementById('manageCountLine'); if (cl) cl.textContent = '';
+        syncManageControls();
         return;
     }
 
-    grid.innerHTML = list.map((item, idx) => `
-        <div class="p-3 rounded-2xl bg-card border border-subtle flex flex-col justify-between shadow">
-            <div>
-                <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-black mb-3 border border-subtle">
-                    <img src="${esc(item.poster)}" alt="${esc(item.title)}" onerror="this.style.visibility='hidden'" class="w-full h-full object-cover">
-                    <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 text-[10px] font-bold text-amber-400 uppercase">${esc(item.category)}</span>
-                    <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/75 text-[10px] font-bold text-white">★ ${esc(item.rating)}</span>
+    const views = safeParse('cineguide_views', {});
+    const totalViews = p => (parseInt(p.baseViews) || 100) + (views[p.id] || 0);
+
+    // keep ORIGINAL index so Edit / Delete still hit the right post after filtering
+    const q = manageState.q.trim().toLowerCase();
+    let rows = all.map((item, idx) => ({ item, idx })).filter(({ item }) => {
+        if (manageState.category && item.category !== manageState.category) return false;
+        if (manageState.industry && item.industry !== manageState.industry) return false;
+        if (manageState.safety && (item.safetyLevel || 'Safe') !== manageState.safety) return false;
+        if (q) {
+            const hay = [item.title, item.year, item.category, item.industry, item.language, item.platform,
+                ...(item.genres || []), ...(item.tags || []), ...((item.cast || []).map(c => c.name))]
+                .filter(Boolean).join(' ').toLowerCase();
+            if (!hay.includes(q)) return false;
+        }
+        return true;
+    });
+
+    const sorters = {
+        newest: (a, b) => (b.item.uploadedAt || 0) - (a.item.uploadedAt || 0),
+        oldest: (a, b) => (a.item.uploadedAt || 0) - (b.item.uploadedAt || 0),
+        rating: (a, b) => parseFloat(b.item.rating || 0) - parseFloat(a.item.rating || 0),
+        views: (a, b) => totalViews(b.item) - totalViews(a.item),
+        title: (a, b) => String(a.item.title || '').localeCompare(String(b.item.title || ''))
+    };
+    rows.sort(sorters[manageState.sort] || sorters.newest);
+
+    // "Filtered by" label + count
+    const parts = [];
+    if (manageState.q.trim()) parts.push(`“${manageState.q.trim()}”`);
+    if (manageState.category) parts.push(manageState.category);
+    if (manageState.industry) parts.push(manageState.industry);
+    if (manageState.safety) parts.push({ Safe: 'Family Safe', Moderate: 'Moderate', Strict: 'Strict 18+' }[manageState.safety]);
+    const fb = document.getElementById('manageFilteredBy');
+    if (fb) fb.textContent = parts.length ? parts.join(' • ') : 'All posts';
+    const cl = document.getElementById('manageCountLine');
+    if (cl) cl.textContent = `Showing ${rows.length} of ${all.length} posts`;
+
+    if (!rows.length) {
+        grid.className = 'grid grid-cols-1 gap-5';
+        grid.innerHTML = `<div class="p-10 text-center rounded-2xl bg-card border border-subtle">
+            <p class="text-sm font-bold text-slate-200 mb-2">No matching posts found</p>
+            <button onclick="resetManageFilters()" class="px-4 py-2 rounded-xl accent-bg text-white font-bold text-xs">Reset Filters</button>
+        </div>`;
+        syncManageControls();
+        return;
+    }
+
+    const compact = manageState.layout === 'grid2';
+    grid.className = compact ? 'grid grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4' : 'grid grid-cols-1 lg:grid-cols-2 gap-5';
+
+    const safetyBadge = lv => lv === 'Strict'
+        ? '<span class="text-rose-500">ADULT 18+</span>'
+        : lv === 'Moderate' ? '<span class="text-amber-500">MODERATE</span>' : '<span class="text-emerald-500">FAMILY SAFE</span>';
+
+    grid.innerHTML = rows.map(({ item, idx }) => {
+        const img = item.backdrop || item.poster || '';
+        return `
+        <article class="group relative rounded-2xl overflow-hidden bg-card border border-subtle shadow-lg hover:border-rose-500/40 transition">
+            <div class="relative ${compact ? 'h-40' : 'h-52 sm:h-56'} w-full bg-black overflow-hidden">
+                <img src="${esc(img)}" alt="${esc(item.title)}" onerror="this.style.visibility='hidden'" class="w-full h-full object-cover opacity-85">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
+
+                <span class="absolute top-2.5 left-2.5 px-2 py-1 rounded-lg bg-black/65 backdrop-blur-md text-[10px] sm:text-[11px] font-semibold text-gray-200 border border-white/10 flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i> ${adminTimeAgo(item.uploadedAt)}
+                </span>
+                <span class="absolute top-2.5 right-2.5 px-2 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[10px] sm:text-[11px] font-bold uppercase text-white border border-white/15">
+                    ${esc(item.platform || 'HD')}
+                </span>
+
+                <div class="absolute inset-x-3.5 bottom-3">
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-300 block mb-0.5 truncate">${esc(item.industry)}</span>
+                    <h3 class="${compact ? 'text-lg' : 'text-2xl sm:text-3xl'} font-black tracking-tight text-white drop-shadow-md uppercase leading-none ${compact ? 'line-clamp-2' : ''}">
+                        ${esc(item.title)} <span class="${compact ? 'text-xs' : 'text-base'} font-semibold opacity-75">${esc(item.year)}</span>
+                    </h3>
                 </div>
-                <h4 class="font-extrabold text-sm truncate text-white mb-0.5">${esc(item.title)} (${esc(item.year)})</h4>
-                <p class="text-[11px] text-emerald-400 font-mono mb-3 truncate">/?post=${esc(item.slug || item.id)}</p>
             </div>
-            <div class="flex items-center gap-2 pt-2 border-t border-subtle">
-                <button onclick="loadPostForEditing(${idx})" class="flex-1 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500 hover:text-black text-amber-400 text-xs font-bold transition flex items-center justify-center gap-1">
-                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit
-                </button>
-                <button onclick="deleteCustomPost(${idx})" class="flex-1 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-600 hover:text-white text-rose-400 text-xs font-bold transition flex items-center justify-center gap-1">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
-                </button>
+
+            <div class="p-3 sm:p-3.5 flex items-center justify-between gap-2 bg-card">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 text-xs font-extrabold text-amber-500">
+                        <span>★ ${esc(item.rating)}</span>
+                        <span class="text-slate-400 font-medium whitespace-nowrap">• <i data-lucide="eye" class="w-3.5 h-3.5 inline -mt-0.5"></i> ${totalViews(item)}${compact ? '' : ' views'}</span>
+                    </div>
+                    <div class="text-[11px] font-bold mt-0.5 truncate">${safetyBadge(item.safetyLevel || 'Safe')} <span class="text-emerald-500">• ${esc(String(item.language || 'English'))}</span></div>
+                </div>
+
+                <!-- Edit & Delete (replace Bookmark / Watched buttons) -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="loadPostForEditing(${idx})" title="Edit post" class="${compact ? 'w-9 h-9' : 'w-10 h-10'} rounded-xl bg-white/5 text-slate-100 border border-subtle flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="deleteCustomPost(${idx})" title="Delete post" class="${compact ? 'w-9 h-9' : 'w-10 h-10'} rounded-xl bg-white/5 text-slate-100 border border-subtle flex items-center justify-center hover:bg-rose-600 hover:text-white hover:border-rose-600 transition">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-    `).join('');
-    lucide.createIcons();
+        </article>`;
+    }).join('');
+
+    syncManageControls();
 }
 
 function loadPostForEditing(index) {
