@@ -86,6 +86,14 @@
         .star-btn svg { display: block; width: 100%; max-width: 30px; height: auto; aspect-ratio: 1 / 1; }
         @media (max-width: 360px) { .star-btn { padding: 6px 0; } }
 
+        /* ---- Detail hero: story-style auto slider ---- */
+        .hero-seg { flex: 1 1 0; height: 3px; border-radius: 2px; background: rgba(255,255,255,.35); overflow: hidden; min-width: 6px; }
+        .hero-seg > i { display: block; height: 100%; width: 0; background: #fff; }
+        .hero-seg.done > i { width: 100%; }
+        .hero-seg.active > i { animation: heroFill 4000ms linear forwards; }
+        .hero-paused .hero-seg.active > i { animation-play-state: paused; }
+        @keyframes heroFill { to { width: 100%; } }
+
         html, body { overflow-anchor: none; }
         /* Point 13 Fixed: Smooth Hide-on-Scroll Category Bar */
         #scrollableCatWrapper {
@@ -1743,6 +1751,7 @@
             currentDetailItem = item;
             currentDetailMetaTab = 'story';
             currentStillIndex = 0;
+            heroPaused = false;
 
             renderDetailContent();
             switchView('detail');
@@ -1775,12 +1784,80 @@
             renderDetailContent();
         }
 
+        // ---- Detail hero slider: auto-slides every 4s, story-style progress bar, pause/play, swipe ----
+        const HERO_MS = 4000;
+        let heroTimer = null, heroPaused = false, heroTickStart = 0, heroTouchX = null;
+        function heroStillsList() {
+            const it = currentDetailItem;
+            return (it && Array.isArray(it.stills) && it.stills.length) ? it.stills : [it && it.backdrop];
+        }
+        function heroPaint() {
+            const wrap = document.getElementById('detailHeroWrap');
+            if (!wrap) return;
+            wrap.querySelectorAll('.hero-img').forEach((im, i) => { im.style.opacity = i === currentStillIndex ? '0.85' : '0'; });
+            const segs = wrap.querySelectorAll('.hero-seg');
+            segs.forEach((sg, i) => { sg.classList.remove('active'); sg.classList.toggle('done', i < currentStillIndex); });
+            const act = segs[currentStillIndex];
+            if (act) { void act.offsetWidth; act.classList.add('active'); }
+        }
+        function heroSchedule(ms) {
+            clearTimeout(heroTimer);
+            if (heroPaused || heroStillsList().length < 2) return;
+            heroTickStart = Date.now();
+            heroTimer = setTimeout(heroTick, ms);
+        }
+        function heroTick() {
+            const wrap = document.getElementById('detailHeroWrap');
+            if (!wrap) return;
+            if (document.hidden || wrap.offsetParent === null) { heroSchedule(HERO_MS); return; }
+            changeHeroStill(1);
+        }
         function changeHeroStill(dir) {
             if (!currentDetailItem) return;
-            const stills = currentDetailItem.stills && currentDetailItem.stills.length ? currentDetailItem.stills : [currentDetailItem.backdrop];
-            currentStillIndex = (currentStillIndex + dir + stills.length) % stills.length;
-            document.getElementById('detailHeroImg').src = stills[currentStillIndex];
-            document.getElementById('detailSlideCounter').textContent = `${currentStillIndex + 1} / ${stills.length}`;
+            const n = heroStillsList().length;
+            currentStillIndex = (currentStillIndex + dir + n) % n;
+            heroPaint();
+            heroSchedule(HERO_MS);
+        }
+        function heroTogglePause() {
+            const wrap = document.getElementById('detailHeroWrap');
+            if (!wrap) return;
+            if (!heroPaused) {
+                heroPaused = true;
+                clearTimeout(heroTimer);
+                heroElapsedMs = Date.now() - heroTickStart;
+            } else {
+                heroPaused = false;
+                heroSchedule(Math.max(400, HERO_MS - (heroElapsedMs || 0)));
+            }
+            wrap.classList.toggle('hero-paused', heroPaused);
+            heroUpdatePauseIcon();
+        }
+        let heroElapsedMs = 0;
+        function heroUpdatePauseIcon() {
+            const b = document.getElementById('heroPauseBtn');
+            if (!b) return;
+            b.setAttribute('aria-label', heroPaused ? 'Play slideshow' : 'Pause slideshow');
+            b.innerHTML = heroPaused
+                ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="7,4 20,12 7,20"/></svg>'
+                : '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+        }
+        function heroTouchStart(e) { heroTouchX = e.touches && e.touches[0] ? e.touches[0].clientX : null; }
+        function heroTouchEnd(e) {
+            if (heroTouchX === null) return;
+            const x = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : heroTouchX;
+            const dx = x - heroTouchX; heroTouchX = null;
+            if (Math.abs(dx) > 45) changeHeroStill(dx < 0 ? 1 : -1);
+        }
+        function startHeroAutoplay() {
+            clearTimeout(heroTimer);
+            const wrap = document.getElementById('detailHeroWrap');
+            if (!wrap) return;
+            wrap.classList.toggle('hero-paused', heroPaused);
+            heroUpdatePauseIcon();
+            heroPaint();
+            heroElapsedMs = 0;
+            heroSchedule(HERO_MS);
         }
 
         function renderDetailContent() {
@@ -1790,6 +1867,7 @@
             const isWatched = watchedIds.includes(item.id);
             const myRating = userRatings[item.id];
             const stills = item.stills && item.stills.length ? item.stills : [item.backdrop];
+            if (currentStillIndex >= stills.length) currentStillIndex = 0;
             const relatedItems = allReviews.filter(r => r.id !== item.id);
             const totalViews = getTotalViews(item);
             const comments = getItemComments(item);
@@ -1805,21 +1883,23 @@
             const container = document.getElementById('detailContent');
             container.innerHTML = `
                 <!-- TOP HERO IMAGE SLIDER -->
-                <div class="relative w-full h-[320px] sm:h-[420px] bg-black overflow-hidden">
-                    <img id="detailHeroImg" src="${stills[currentStillIndex]}" class="w-full h-full object-cover opacity-85 transition duration-500">
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#090a0f] via-[#090a0f]/40 to-transparent"></div>
+                <div id="detailHeroWrap" class="relative w-full h-[320px] sm:h-[420px] bg-black overflow-hidden" ontouchstart="heroTouchStart(event)" ontouchend="heroTouchEnd(event)">
+                    ${stills.map((u, i) => `<img src="${esc(u)}" alt="" ${i === 0 ? '' : 'loading="lazy"'} class="hero-img absolute inset-0 w-full h-full object-cover transition-opacity duration-700" style="opacity:${i === currentStillIndex ? '0.85' : '0'}">`).join('')}
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#090a0f] via-[#090a0f]/40 to-transparent pointer-events-none"></div>
 
-                    <div class="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-3 text-xs font-bold text-white">
-                        <span id="detailSlideCounter">1 / ${stills.length}</span>
-                        <span class="opacity-70">||</span>
+                    ${stills.length > 1 ? `
+                    <div class="absolute top-4 left-4 right-4 flex items-center gap-2 pointer-events-none">
+                        <div class="pointer-events-auto px-3 py-2 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-2.5" style="max-width:100%;">
+                            <div class="flex items-center gap-1" style="width:min(46vw,200px);">${stills.map(() => '<span class="hero-seg"><i></i></span>').join('')}</div>
+                            <button id="heroPauseBtn" type="button" onclick="heroTogglePause()" class="shrink-0 w-6 h-6 flex items-center justify-center text-white"></button>
+                        </div>
                     </div>
-
-                    <button onclick="changeHeroStill(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-black transition">
+                    <button type="button" aria-label="Previous image" onclick="changeHeroStill(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-black transition">
                         <i data-lucide="chevron-left" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="changeHeroStill(1)" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-black transition">
+                    <button type="button" aria-label="Next image" onclick="changeHeroStill(1)" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-black transition">
                         <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                    </button>
+                    </button>` : ''}
 
                     <div class="absolute bottom-4 left-4 right-4">
                         <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white">
@@ -2058,6 +2138,7 @@
             `;
             renderKeepBinging();
             updateLayoutToggleButtonsUI();
+            startHeroAutoplay();
             injectAd('adDetailSlot', getAdsConfig().detailBanner);
             lucide.createIcons();
         }
