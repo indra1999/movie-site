@@ -30,7 +30,7 @@
     function union(a, b) { return Array.from(new Set([].concat(a || [], b || []))); }
 
     function push() {
-        if (!ready || !user || busy) return;
+        if (!ready || !user || user.isAnonymous || busy) return;
         const s = localState();
         db.collection('users').doc(user.uid).set({
             watchlist: s.watchlist, watched: s.watched, ratings: s.ratings, notify: s.notify,
@@ -41,7 +41,7 @@
 
     // index.html-এর safeSave() প্রতিবার সেভের পর এটা ডাকে
     function onLocalSave(key) {
-        if (!ready || !user || !MAP[key]) return;
+        if (!ready || !user || user.isAnonymous || !MAP[key]) return;
         clearTimeout(timer);
         timer = setTimeout(push, 700);
     }
@@ -97,7 +97,7 @@
     async function submitCG(postId, value) {
         value = Math.round(Number(value));
         if (!ready) return 'unavailable';
-        if (!user) return 'needs-login';
+        if (!user || user.isAnonymous) return 'needs-login';
         if (!(value >= 1 && value <= 10)) return 'error';
         const agg = db.collection('cg_ratings').doc(cgId(postId));
         const vote = agg.collection('votes').doc(user.uid);
@@ -121,7 +121,7 @@
     }
 
     async function removeCG(postId) {
-        if (!ready || !user) return 'unavailable';
+        if (!ready || !user || user.isAnonymous) return 'unavailable';
         const agg = db.collection('cg_ratings').doc(cgId(postId));
         const vote = agg.collection('votes').doc(user.uid);
         try {
@@ -140,7 +140,7 @@
 
     // গেস্ট অবস্থায় দেওয়া রেটিং লগইনের পর CG-তে পাঠানো হয় (একবারই)
     async function syncLocalRatingsToCG() {
-        if (!ready || !user) return;
+        if (!ready || !user || user.isAnonymous) return;
         const ratings = lsRead('cineguide_user_ratings', {});
         const done = lsRead(syncedKey(), {});
         for (const id of Object.keys(ratings)) {
@@ -175,9 +175,13 @@
         if (!ready || !user) return null;
         try { const s = await pgDoc(postId).collection('votes').doc(user.uid).get(); return s.exists ? s.data() : null; } catch (e) { return null; }
     }
-    async function submitPG(postId, vote) {
+    async function submitPG(postId, vote, allowGuest) {
         if (!ready) return 'unavailable';
-        if (!user) return 'needs-login';
+        if (!user || (user.isAnonymous && !allowGuest)) {
+            if (!allowGuest) return 'needs-login';
+            try { const cred = await auth.signInAnonymously(); user = cred.user; }
+            catch (e) { console.warn('Guest sign-in failed', e); return 'guest-unavailable'; }
+        }
         const clean = {};
         PG_CATS.forEach(c => { const n = Number(vote && vote[c]); if (vote && vote[c] !== undefined && Number.isInteger(n) && n >= 0 && n <= 3) clean[c] = n; });
         if (vote && (vote.family === 'yes' || vote.family === 'no')) clean.family = vote.family;
@@ -214,7 +218,8 @@
             return 'ok';
         } catch (e) { console.warn('PG remove failed', e); return 'error'; }
     }
-    function isSignedIn() { return !!(ready && user); }
+    function isSignedIn() { return !!(ready && user && !user.isAnonymous); }   // real (Google) member
+    function hasSession() { return !!(ready && user); }                          // member or guest session
 
     function signInWithGoogle() {
         if (!ready) { if (window.showToast) window.showToast('Firebase not configured yet'); return; }
@@ -230,12 +235,12 @@
         auth.onAuthStateChanged(u => {
             user = u;
             if (window.onCineAuthChange) window.onCineAuthChange(!!u);
-            if (u) {
+            if (u && !u.isAnonymous) {
                 if (window.applyCloudUser) window.applyCloudUser(u.displayName || (u.email || 'User').split('@')[0], u.email || '');
                 pullAndMerge();
             }
         });
     }
 
-    window.CineSync = { ready, onLocalSave, signInWithGoogle, signOut, getCG, submitCG, removeCG, getPG, getMyPG, submitPG, removePG, isSignedIn };
+    window.CineSync = { ready, onLocalSave, signInWithGoogle, signOut, getCG, submitCG, removeCG, getPG, getMyPG, submitPG, removePG, isSignedIn, hasSession };
 })();
