@@ -1677,6 +1677,29 @@
         const PG_COLORS = ['#10b981', '#facc15', '#fb923c', '#ef4444'];
         let pgData = {}, pgMine = {}, pgDraft = {}, pgDraftFor = null, pgBusy = false;
 
+        // Switch between "Complete Parental Content Guide" and "Community Guide" (choice is remembered)
+        let pgViewMode = (safeText('cineguide_pg_view') === 'community') ? 'community' : 'official';
+        function setPGView(mode) {
+            pgViewMode = mode === 'community' ? 'community' : 'official';
+            try { localStorage.setItem('cineguide_pg_view', pgViewMode); } catch (e) {}
+            applyPGView();
+        }
+        function applyPGView() {
+            const off = document.getElementById('pgPanelOfficial'), com = document.getElementById('pgPanelCommunity');
+            if (!off || !com) return;
+            const mode = getFeatures().communityGuide.enabled ? pgViewMode : 'official';
+            off.classList.toggle('hidden', mode !== 'official');
+            com.classList.toggle('hidden', mode !== 'community');
+            const base = 'flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] sm:text-xs font-extrabold text-center leading-tight transition ';
+            [['official', 'pgTabOfficial'], ['community', 'pgTabCommunity']].forEach(([m, id]) => {
+                const b = document.getElementById(id);
+                if (!b) return;
+                const on = m === mode;
+                b.className = base + (on ? 'accent-bg text-white shadow' : 'text-theme-muted hover:text-theme-main');
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+        }
+
         async function loadPG(id) {
             if (!getFeatures().communityGuide.enabled || !window.CineSync || !CineSync.getPG) return;
             try {
@@ -1721,6 +1744,8 @@
             const agg = pgData[id] || {};
             const n = k => Number(agg[k]) || 0;
             const total = n('total');
+            const tabCount = document.getElementById('pgTabCount');
+            if (tabCount) tabCount.textContent = total ? `(${total})` : '';
             const ready = !!(window.CineSync && CineSync.ready);
             const signed = !!(window.CineSync && CineSync.isSignedIn && CineSync.isSignedIn());
             const canVote = signed || PF.guestVoting;
@@ -2248,9 +2273,17 @@
 
                     <!-- PARENTAL GUIDANCE & STORY REVIEW SECTION -->
                     <div id="parentalSection" class="p-5 rounded-2xl bg-theme-card border border-theme mb-8">
+                        ${getFeatures().communityGuide.enabled ? `
+                        <!-- SWITCH: Complete Parental Content Guide  |  Community Guide -->
+                        <div id="pgSwitchBar" role="tablist" class="grid grid-cols-2 gap-2 mb-4 p-1.5 rounded-2xl bg-theme-main border border-theme">
+                            <button id="pgTabOfficial" type="button" role="tab" onclick="setPGView('official')"><i data-lucide="shield-alert" class="w-4 h-4 shrink-0"></i><span>Complete Parental Content Guide</span></button>
+                            <button id="pgTabCommunity" type="button" role="tab" onclick="setPGView('community')"><i data-lucide="users" class="w-4 h-4 shrink-0"></i><span>Community Guide</span><span id="pgTabCount" class="opacity-80"></span></button>
+                        </div>` : `
                         <h2 class="text-lg font-extrabold text-theme-main mb-3 flex items-center gap-2">
                             <i data-lucide="shield-alert" class="w-5 h-5 accent-text"></i> Complete Parental Content Guide
-                        </h2>
+                        </h2>`}
+
+                        <div id="pgPanelOfficial">
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                             <div class="p-3.5 rounded-xl bg-theme-main border border-theme">
@@ -2276,8 +2309,12 @@
                             <span class="text-theme-main font-medium">${esc(item.verdict)}</span>
                         </div>
 
+                        </div><!-- /pgPanelOfficial -->
+
                         <!-- COMMUNITY GUIDE: logged-in viewers vote here -->
-                        <div id="pgCommunity" class="mt-5 pt-5 border-t border-theme"></div>
+                        <div id="pgPanelCommunity" class="hidden">
+                            <div id="pgCommunity"></div>
+                        </div>
                     </div>
 
                     <div id="adDetailSlot" class="hidden mb-8 overflow-hidden flex justify-center"></div>
@@ -2298,6 +2335,7 @@
             updateLayoutToggleButtonsUI();
             startHeroAutoplay();
             renderPGCommunity();
+            applyPGView();
             if (!pgData[item.id]) loadPG(item.id);
             injectAd('adDetailSlot', getAdsConfig().detailBanner);
             lucide.createIcons();
