@@ -3,8 +3,10 @@
 //
 // Admin UI and the public site only *call* this file. You can redesign the
 // admin panel, add/remove features, or change index.html — as long as the data
-// keys below stay the same, your posts, visitor comments and API key are safe.
-// Never rename a key here: that is what would "lose" data.
+// keys below stay the same, nothing is lost.
+// NOTE: on the admin page the content keys below are redirected to the cloud by
+// admin-modules/cloud-store.js, so they are NOT stored in this browser any more.
+// Never rename a key here.
 //
 //   cineguide_custom_reviews   -> your posts (and edited/seeded demo posts)
 //   cineguide_upcoming         -> upcoming releases

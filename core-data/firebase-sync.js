@@ -1,7 +1,7 @@
 // ============================================================================
-// core-data/firebase-sync.js  —  ইউজারের Watchlist / Watched / Ratings / Notify
-// Google দিয়ে লগইন করলে এগুলো Firestore-এ  users/{uid}  ডকুমেন্টে সেভ হয়।
-// লগইন না করলে (Guest) আগের মতোই localStorage-এ থাকে।
+// core-data/firebase-sync.js  —  user Watchlist / Watched / Ratings / Notify + site content
+// When a user signs in, these are saved to Firestore in the  users/{uid}  document.
+// Guests (not signed in) keep them in localStorage on their own device.
 // ============================================================================
 (function () {
     'use strict';
@@ -16,7 +16,7 @@
     const cfg = window.CINE_FIREBASE || {};
     const ready = !!(window.firebase && cfg.apiKey && cfg.projectId);
 
-    let auth = null, db = null, user = null, timer = null, busy = false;
+    let auth = null, db = null, user = null, timer = null, busy = false, authResolved = false;
 
     function lsRead(key, fb) {
         try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fb; } catch (e) { return fb; }
@@ -39,7 +39,7 @@
         }, { merge: true }).catch(e => console.warn('Cloud save failed', e));
     }
 
-    // index.html-এর safeSave() প্রতিবার সেভের পর এটা ডাকে
+    // index.html's safeSave() calls this after every save
     function onLocalSave(key) {
         if (!ready || !user || user.isAnonymous || !MAP[key]) return;
         clearTimeout(timer);
@@ -52,11 +52,22 @@
             const snap = await db.collection('users').doc(user.uid).get();
             const cloud = snap.exists ? snap.data() : {};
             const loc = localState();
-            // গেস্ট অবস্থায় সেভ করা আইটেম + ক্লাউডের আইটেম — দুটোই রাখা হয়
-            lsWrite('cineguide_watchlist', union(cloud.watchlist, loc.watchlist));
-            lsWrite('cineguide_watched', union(cloud.watched, loc.watched));
-            lsWrite('cineguide_notify_upcoming', union(cloud.notify, loc.notify));
-            lsWrite('cineguide_user_ratings', Object.assign({}, cloud.ratings || {}, loc.ratings || {}));
+            // items saved as a guest + items from the cloud: both are kept
+            const mk = 'cineguide_cloud_merged_' + user.uid;
+            if (lsRead(mk, false) && snap.exists) {
+                // already merged once on this device: the cloud copy wins, so removed items stay removed
+                lsWrite('cineguide_watchlist', cloud.watchlist || []);
+                lsWrite('cineguide_watched', cloud.watched || []);
+                lsWrite('cineguide_notify_upcoming', cloud.notify || []);
+                lsWrite('cineguide_user_ratings', cloud.ratings || {});
+            } else {
+                // first sign-in on this device: keep guest items + cloud items
+                lsWrite('cineguide_watchlist', union(cloud.watchlist, loc.watchlist));
+                lsWrite('cineguide_watched', union(cloud.watched, loc.watched));
+                lsWrite('cineguide_notify_upcoming', union(cloud.notify, loc.notify));
+                lsWrite('cineguide_user_ratings', Object.assign({}, cloud.ratings || {}, loc.ratings || {}));
+                lsWrite(mk, true);
+            }
             if (typeof window.reloadUserLibrary === 'function') window.reloadUserLibrary();
         } catch (e) {
             console.warn('Cloud load failed', e);
@@ -69,17 +80,17 @@
 
 
     // ------------------------------------------------------------------------
-    // CG RATING — সব ইউজারের রেটিং একসাথে জমা হয়ে গড় (average) হয়
-    //   cg_ratings/{postId}              -> { sum, count }   (সামারি)
-    //   cg_ratings/{postId}/votes/{uid}  -> { value, uid }   (প্রতি ইউজারের ১টি ভোট)
-    // একই ইউজার আবার রেটিং দিলে আগের ভোট বদলে যায় (দুইবার গোনা হয় না)।
+    // CG RATING — every user's rating is collected into one average
+    //   cg_ratings/{postId}              -> { sum, count }   (summary)
+    //   cg_ratings/{postId}/votes/{uid}  -> { value, uid }   (one vote per user)
+    // If the same user rates again, the earlier vote is replaced (never counted twice).
     // ------------------------------------------------------------------------
     function cgId(postId) { return String(postId).replace(/[\/\s]+/g, '_'); }
     function syncedKey() { return 'cineguide_cg_synced_' + (user ? user.uid : 'guest'); }
 
     async function getCG(postId) {
         if (!ready) {
-            // Firebase চালু না থাকলে শুধু এই ডিভাইসের নিজের রেটিংটাই দেখাবে
+            // without Firebase only this device's own rating is shown
             const mine = lsRead('cineguide_user_ratings', {})[postId];
             return mine ? { avg: mine, count: 1, local: true } : { avg: 0, count: 0, local: true };
         }
@@ -138,7 +149,7 @@
         } catch (e) { console.warn('CG remove failed', e); return 'error'; }
     }
 
-    // গেস্ট অবস্থায় দেওয়া রেটিং লগইনের পর CG-তে পাঠানো হয় (একবারই)
+    // ratings given as a guest are sent to CG after sign-in (only once)
     async function syncLocalRatingsToCG() {
         if (!ready || !user || user.isAnonymous) return;
         const ratings = lsRead('cineguide_user_ratings', {});
@@ -151,10 +162,10 @@
 
 
     // ------------------------------------------------------------------------
-    // COMMUNITY PARENTAL GUIDE — শুধু লগইন করা ইউজাররা ভোট দিতে পারে
+    // COMMUNITY PARENTAL GUIDE — only signed-in users can vote
     //   pg_votes/{postId}              -> counters (total, fam_yes, fam_no, c_sex_0..3 ...)
     //   pg_votes/{postId}/votes/{uid}  -> { sex, violence, profanity, drugs (0-3), family: yes|no }
-    // এক ইউজার = এক পোস্টে এক ভোট (আবার দিলে আগেরটা বদলে যায়)।
+    // One user = one vote per post (voting again replaces the earlier vote).
     // ------------------------------------------------------------------------
     const PG_CATS = ['sex', 'violence', 'profanity', 'drugs'];
     function pgDoc(postId) { return db.collection('pg_votes').doc(cgId(postId)); }
@@ -218,6 +229,49 @@
             return 'ok';
         } catch (e) { console.warn('PG remove failed', e); return 'error'; }
     }
+    // ------------------------------------------------------------------------
+    // SHARED COMMENTS — cg_comments/{id} = { postId, uid, name, text, createdAt }
+    // Everyone reads; only signed-in (non-guest) users post; authors and the admin delete.
+    // ------------------------------------------------------------------------
+    function mapComment(d) {
+        const v = d.data() || {};
+        return { id: d.id, uid: v.uid, name: v.name, text: v.text, postId: v.postId, createdAt: v.createdAt && v.createdAt.toMillis ? v.createdAt.toMillis() : Date.now() };
+    }
+    async function getComments(postId) {
+        if (!ready) return null;
+        try {
+            const snap = await db.collection('cg_comments').where('postId', '==', String(postId)).limit(100).get();
+            const out = []; snap.forEach(d => out.push(mapComment(d)));
+            return out.sort((a, b) => b.createdAt - a.createdAt);
+        } catch (e) { console.warn('Comments read failed', e); return null; }
+    }
+    async function getRecentComments(limit) {
+        if (!ready) return null;
+        try {
+            const snap = await db.collection('cg_comments').orderBy('createdAt', 'desc').limit(limit || 100).get();
+            const out = []; snap.forEach(d => out.push(mapComment(d)));
+            return out;
+        } catch (e) { console.warn('Comments read failed', e); return null; }
+    }
+    async function addComment(postId, text, name) {
+        if (!ready) return 'unavailable';
+        if (!user || user.isAnonymous) return 'needs-login';
+        text = String(text || '').trim().slice(0, 500);
+        if (!text) return 'error';
+        try {
+            await db.collection('cg_comments').add({
+                postId: String(postId).slice(0, 120), uid: user.uid,
+                name: String(name || user.displayName || 'User').slice(0, 40), text,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return 'ok';
+        } catch (e) { console.warn('Comment save failed', e); return 'error'; }
+    }
+    async function deleteComment(id) {
+        if (!ready || !user) return 'unavailable';
+        try { await db.collection('cg_comments').doc(String(id)).delete(); return 'ok'; }
+        catch (e) { console.warn('Comment delete failed', e); return 'error'; }
+    }
     function isSignedIn() { return !!(ready && user && !user.isAnonymous); }   // real (Google) member
     function hasSession() { return !!(ready && user); }                          // member or guest session
 
@@ -234,8 +288,9 @@
         db = firebase.firestore();
         auth.onAuthStateChanged(u => {
             user = u;
+            authResolved = true;
             if (window.onCineAuthChange) window.onCineAuthChange(!!u);
-            if (u && !u.isAnonymous) {
+            if (u && !u.isAnonymous && !window.CINE_ADMIN_PAGE) {
                 if (window.applyCloudUser) window.applyCloudUser(u.displayName || (u.email || 'User').split('@')[0], u.email || '');
                 pullAndMerge();
             }
@@ -248,53 +303,141 @@
     //   cg_site/posts_0.. -> { json: "[ ...posts... ]" }   (split in chunks, Firestore doc limit = 1 MB)
     // Everybody can read; only the admin e-mail written in the Firestore rules can write.
     // ------------------------------------------------------------------------
-    function chunkList(list, maxChars) {
+    const byteLen = str => new TextEncoder().encode(str).length;
+    function chunkList(list, maxBytes) {
         const chunks = []; let cur = [], size = 0;
         list.forEach(x => {
-            const len = JSON.stringify(x).length;
-            if (cur.length && size + len > maxChars) { chunks.push(cur); cur = []; size = 0; }
+            const len = byteLen(JSON.stringify(x)) + 1;
+            if (cur.length && size + len > maxBytes) { chunks.push(cur); cur = []; size = 0; }
             cur.push(x); size += len;
         });
         if (cur.length || !chunks.length) chunks.push(cur);
         return chunks;
     }
-    async function loadSiteContent() {
+    // cached = { rev, data } from the visitor's last visit: if the revision is unchanged only ONE document is read.
+    async function loadSiteContent(cached) {
         if (!ready) return null;
-        const snap = await db.collection('cg_site').get();
+        const col = db.collection('cg_site');
+        if (cached && cached.rev && cached.data) {
+            try {
+                const m = await col.doc('meta').get();
+                if (m.exists) {
+                    const v = JSON.parse((m.data() || {}).json || 'null');
+                    if (v && Number(v.rev) === Number(cached.rev)) return cached.data;
+                }
+            } catch (e) { /* fall through to a full load */ }
+        }
+        const snap = await col.get();
         if (snap.empty) return null;
-        const out = {}, parts = [];
+        const out = {}, posts = [], ups = [];
         snap.forEach(d => {
             let v = null;
             try { v = JSON.parse((d.data() || {}).json || 'null'); } catch (e) { return; }
             if (d.id === 'meta' && v && typeof v === 'object') Object.assign(out, v);
-            else if (/^posts_\d+$/.test(d.id) && Array.isArray(v)) parts.push([parseInt(d.id.slice(6), 10), v]);
+            else if (/^posts_\d+$/.test(d.id) && Array.isArray(v)) posts.push([parseInt(d.id.slice(6), 10), v]);
+            else if (/^upcoming_\d+$/.test(d.id) && Array.isArray(v)) ups.push([parseInt(d.id.slice(9), 10), v]);
         });
-        parts.sort((a, b) => a[0] - b[0]);
-        out.reviews = [].concat.apply([], parts.map(p => p[1]));
+        posts.sort((a, b) => a[0] - b[0]); ups.sort((a, b) => a[0] - b[0]);
+        out.reviews = [].concat.apply([], posts.map(p => p[1]));
+        if (ups.length) out.upcoming = [].concat.apply([], ups.map(p => p[1]));
         return out;
     }
-    async function publishSiteContent(data) {
+    // expectedRev: the revision this browser loaded. If someone else saved in the meantime
+    // the write is refused with { status: 'conflict' } instead of silently overwriting their work.
+    async function publishSiteContent(data, expectedRev) {
         if (!ready) return { status: 'unavailable' };
         if (!user || user.isAnonymous) return { status: 'needs-login' };
         try {
             const reviews = Array.isArray(data.reviews) ? data.reviews : [];
-            const meta = Object.assign({}, data); delete meta.reviews;
-            const chunks = chunkList(reviews, 250000);
+            const upcoming = Array.isArray(data.upcoming) ? data.upcoming : [];
+            const meta = Object.assign({}, data); delete meta.reviews; delete meta.upcoming; delete meta.rev;
+            const big = reviews.concat(upcoming).find(x => byteLen(JSON.stringify(x)) > 900000);
+            if (big) return { status: 'toolarge', message: 'The post "' + (big.title || big.id) + '" is larger than 900 KB. Remove embedded (base64) images and use image URLs instead.' };
+            if (byteLen(JSON.stringify(meta)) > 900000) return { status: 'toolarge', message: 'Site settings are larger than 900 KB.' };
+            const chunks = chunkList(reviews, 600000);
+            const upChunks = chunkList(upcoming, 600000);
             const col = db.collection('cg_site');
+            const metaRef = col.doc('meta');
             const existing = await col.get();
             const ts = firebase.firestore.FieldValue.serverTimestamp();
-            const batch = db.batch();
-            batch.set(col.doc('meta'), { json: JSON.stringify(meta), updatedAt: ts, by: user.email || '' });
-            chunks.forEach((c, i) => batch.set(col.doc('posts_' + i), { json: JSON.stringify(c), updatedAt: ts }));
-            existing.forEach(d => { if (/^posts_\d+$/.test(d.id) && parseInt(d.id.slice(6), 10) >= chunks.length) batch.delete(d.ref); });
-            await batch.commit();
-            return { status: 'ok', posts: reviews.length, chunks: chunks.length };
+            let newRev = 0;
+            await db.runTransaction(async tx => {
+                const m = await tx.get(metaRef);
+                let curRev = 0;
+                if (m.exists) { try { curRev = Number(JSON.parse((m.data() || {}).json || '{}').rev) || 0; } catch (e) {} }
+                if (expectedRev !== undefined && curRev !== expectedRev) {
+                    const err = new Error('rev-conflict'); err.code = 'rev-conflict'; err.rev = curRev; throw err;
+                }
+                newRev = curRev + 1;
+                tx.set(metaRef, { json: JSON.stringify(Object.assign({}, meta, { rev: newRev })), updatedAt: ts });
+                upChunks.forEach((c, i) => tx.set(col.doc('upcoming_' + i), { json: JSON.stringify(c), updatedAt: ts }));
+                existing.forEach(d => { if (/^upcoming_\d+$/.test(d.id) && parseInt(d.id.slice(9), 10) >= upChunks.length) tx.delete(d.ref); });
+                chunks.forEach((c, i) => tx.set(col.doc('posts_' + i), { json: JSON.stringify(c), updatedAt: ts }));
+                existing.forEach(d => { if (/^posts_\d+$/.test(d.id) && parseInt(d.id.slice(6), 10) >= chunks.length) tx.delete(d.ref); });
+            });
+            return { status: 'ok', posts: reviews.length, chunks: chunks.length, rev: newRev };
         } catch (e) {
+            if (e && e.code === 'rev-conflict') return { status: 'conflict', rev: e.rev };
             console.warn('Publish failed', e);
             return { status: e && e.code === 'permission-denied' ? 'denied' : 'error', message: (e && e.message) || '' };
         }
     }
+
+    // ------------------------------------------------------------------------
+    // ADMIN-ONLY SETTINGS (TMDB key, custom domain): cg_admin/settings
+    // The Firestore rules let ONLY the admin e-mail read or write this document.
+    // Reading it successfully is also how the admin panel proves the user is the admin.
+    // ------------------------------------------------------------------------
+    async function getAdminSettings() {
+        if (!ready) return { status: 'unavailable' };
+        if (!user || user.isAnonymous) return { status: 'needs-login' };
+        try {
+            const snap = await db.collection('cg_admin').doc('settings').get();
+            let data = {};
+            if (snap.exists) { try { data = JSON.parse((snap.data() || {}).json || '{}') || {}; } catch (e) {} }
+            return { status: 'ok', data };
+        } catch (e) {
+            return { status: e && e.code === 'permission-denied' ? 'denied' : 'error', message: (e && e.message) || '' };
+        }
+    }
+    async function saveAdminSettings(obj) {
+        if (!ready) return { status: 'unavailable' };
+        if (!user || user.isAnonymous) return { status: 'needs-login' };
+        try {
+            await db.collection('cg_admin').doc('settings').set({
+                json: JSON.stringify(obj || {}),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                by: user.email || ''
+            });
+            return { status: 'ok' };
+        } catch (e) {
+            return { status: e && e.code === 'permission-denied' ? 'denied' : 'error', message: (e && e.message) || '' };
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // E-MAIL + PASSWORD SIGN-IN (admin login)
+    // ------------------------------------------------------------------------
+    async function signInWithEmail(email, password) {
+        if (!ready) return { status: 'unavailable' };
+        try { await auth.signInWithEmailAndPassword(email, password); return { status: 'ok' }; }
+        catch (e) { return { status: 'error', code: (e && e.code) || '', message: (e && e.message) || '' }; }
+    }
+    async function sendPasswordReset(email) {
+        if (!ready) return { status: 'unavailable' };
+        try { await auth.sendPasswordResetEmail(email); return { status: 'ok' }; }
+        catch (e) { return { status: 'error', code: (e && e.code) || '', message: (e && e.message) || '' }; }
+    }
+    async function sendVerification() {
+        if (!ready || !user) return { status: 'needs-login' };
+        try { await user.sendEmailVerification(); return { status: 'ok' }; }
+        catch (e) { return { status: 'error', code: (e && e.code) || '', message: (e && e.message) || '' }; }
+    }
+    function isEmailVerified() { return !!(user && user.emailVerified); }
+    function getUser() { return user; }
+    function isAuthResolved() { return authResolved; }
+
     function userEmail() { return user && user.email ? user.email : ''; }
 
-    window.CineSync = { ready, onLocalSave, signInWithGoogle, signOut, getCG, submitCG, removeCG, getPG, getMyPG, submitPG, removePG, isSignedIn, hasSession, loadSiteContent, publishSiteContent, userEmail };
+    window.CineSync = { ready, onLocalSave, signInWithGoogle, signOut, getCG, submitCG, removeCG, getPG, getMyPG, submitPG, removePG, isSignedIn, hasSession, loadSiteContent, publishSiteContent, getAdminSettings, saveAdminSettings, signInWithEmail, sendPasswordReset, sendVerification, isEmailVerified, getUser, isAuthResolved, userEmail, getComments, getRecentComments, addComment, deleteComment };
 })();

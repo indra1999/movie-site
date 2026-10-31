@@ -1,8 +1,8 @@
 // ============================================================================
-// core-data/firebase-config.js  —  আপনার Firebase প্রজেক্টের কনফিগ এখানে বসান
+// core-data/firebase-config.js  —  paste your Firebase project config here
 // Firebase Console -> Project settings -> Your apps -> Web app -> Config
-// এই মানগুলো গোপন নয় (পাবলিক), নিরাপত্তা আসে Firestore Rules থেকে।
-// খালি রাখলে সাইট আগের মতোই শুধু ডিভাইসে (localStorage) সেভ করবে।
+// These values are public by design; security comes from the Firestore Rules.
+// If left empty the site cannot load or save any content.
 // ============================================================================
 window.CINE_FIREBASE = {
     apiKey: 'AIzaSyAnROCw_Vq0SVF820NPZB_LVCT1po8rzvw',
