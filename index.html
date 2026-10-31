@@ -373,7 +373,7 @@
                             <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 accent-text"></i> Filters ⌄
                         </button>
                         <!-- Layout View Switcher (Single Full Post vs 2-Column Side-by-Side) -->
-                        <button onclick="toggleLayoutMode('home')" data-section="home" class="layout-toggle-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-theme-elevated border border-theme text-theme-main font-bold hover:border-rose-500/50 transition" title="Switch Single / 2-Column View">
+                        <button onclick="toggleLayoutMode()" class="layout-toggle-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-theme-elevated border border-theme text-theme-main font-bold hover:border-rose-500/50 transition" title="Switch Single / 2-Column View">
                             <!-- Dynamically updated icon & label -->
                         </button>
                     </div>
@@ -394,7 +394,7 @@
                         <h2 class="text-xl font-extrabold text-theme-main">Upcoming Releases</h2>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="toggleLayoutMode('homeUpcoming')" data-section="homeUpcoming" class="layout-toggle-btn px-2.5 py-1.5 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main"></button>
+                        <button onclick="toggleLayoutMode()" class="layout-toggle-btn px-2.5 py-1.5 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main"></button>
                         <button onclick="switchView('upcoming')" class="px-3 py-1.5 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main hover:border-rose-500/40">
                             View All →
                         </button>
@@ -414,7 +414,7 @@
                 </div>
                 <!-- Layout Toggle Button inside Upcoming Section too -->
                 <div class="flex items-center justify-end">
-                    <button onclick="toggleLayoutMode('upcoming')" data-section="upcoming" class="layout-toggle-btn flex items-center gap-1.5 px-3 py-2 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main shadow-sm"></button>
+                    <button onclick="toggleLayoutMode()" class="layout-toggle-btn flex items-center gap-1.5 px-3 py-2 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main shadow-sm"></button>
                 </div>
             </div>
             <div id="upcomingFullGrid" class="grid grid-cols-1 gap-5"></div>
@@ -427,7 +427,7 @@
                     <p class="text-[11px] font-bold uppercase tracking-widest text-theme-muted mb-1">Your Library</p>
                     <h1 class="text-3xl font-extrabold text-theme-main">Watchlist & Watched</h1>
                 </div>
-                <button onclick="toggleLayoutMode('library')" data-section="library" class="layout-toggle-btn flex items-center gap-1.5 px-3 py-2 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main"></button>
+                <button onclick="toggleLayoutMode()" class="layout-toggle-btn flex items-center gap-1.5 px-3 py-2 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main"></button>
             </div>
 
             <div class="inline-flex p-1 rounded-xl bg-theme-card border border-theme mb-6">
@@ -824,17 +824,7 @@
         let currentUser = safeParse('cineguide_user', null);
         
         // Point 18 & 19: Layout Mode ('single' or 'grid2')
-        // Each section remembers its own Single / 2-Col layout (changing one never affects another)
-        const LAYOUT_SECTIONS = ['home', 'homeUpcoming', 'upcoming', 'library', 'binging'];
-        let layoutModes = (function () {
-            let saved = {};
-            try { saved = JSON.parse(localStorage.getItem('cineguide_layout_modes') || '{}') || {}; } catch (e) {}
-            const legacy = safeText('cineguide_layout_mode') || 'single';
-            const m = {};
-            LAYOUT_SECTIONS.forEach(k => { m[k] = (saved[k] === 'grid2' || saved[k] === 'single') ? saved[k] : legacy; });
-            return m;
-        })();
-        function layoutOf(section) { return layoutModes[section] || 'single'; }
+        let currentLayoutMode = safeText('cineguide_layout_mode') || 'single';
         let currentLibraryTab = 'watchlist';
         let currentDetailItem = null;
         let currentDetailMetaTab = 'story';
@@ -1226,47 +1216,27 @@
         }
 
         // --- POINT 18 & 19 FIXED: GLOBAL LAYOUT TOGGLE (Single Full Post vs 2-Column Side-by-Side) ---
-        function toggleLayoutMode(section) {
-            if (!LAYOUT_SECTIONS.includes(section)) return;
-            layoutModes[section] = layoutModes[section] === 'single' ? 'grid2' : 'single';
-            try { localStorage.setItem('cineguide_layout_modes', JSON.stringify(layoutModes)); } catch (e) {}
+        function toggleLayoutMode() {
+            currentLayoutMode = currentLayoutMode === 'single' ? 'grid2' : 'single';
+            try { localStorage.setItem('cineguide_layout_mode', currentLayoutMode); } catch (e) {}
             updateLayoutToggleButtonsUI();
-            // re-render ONLY the section that was switched
-            if (section === 'home') renderHomeGrid();
-            else if (section === 'homeUpcoming' || section === 'upcoming') renderUpcomingGrids();
-            else if (section === 'library') { if (!document.getElementById('watchlistView').classList.contains('hidden')) renderWatchlistView(); }
-            else if (section === 'binging') renderKeepBinging();
+            renderAllGrids();
         }
 
         function updateLayoutToggleButtonsUI() {
-            document.querySelectorAll('.layout-toggle-btn').forEach(btn => {
-                const mode = layoutOf(btn.dataset.section);
-                btn.innerHTML = mode === 'single'
-                    ? `<i data-lucide="layout-grid" class="w-3.5 h-3.5 accent-text"></i> <span>2-Col Grid</span>`
-                    : `<i data-lucide="rows-2" class="w-3.5 h-3.5 accent-text"></i> <span>Single View</span>`;
+            const buttons = document.querySelectorAll('.layout-toggle-btn');
+            buttons.forEach(btn => {
+                if (currentLayoutMode === 'single') {
+                    btn.innerHTML = `<i data-lucide="layout-grid" class="w-3.5 h-3.5 accent-text"></i> <span>2-Col Grid</span>`;
+                } else {
+                    btn.innerHTML = `<i data-lucide="rows-2" class="w-3.5 h-3.5 accent-text"></i> <span>Single View</span>`;
+                }
             });
-            lucide.createIcons();
-        }
-
-        // Keep Binging (inside a post): related titles, shown with the same card style as Home
-        function renderKeepBinging() {
-            const grid = document.getElementById('keepBingingGrid');
-            if (!grid || !currentDetailItem || currentDetailItem.isUpcoming) return;
-            const related = allReviews.filter(r => r.id !== currentDetailItem.id).slice(0, 6);
-            if (!related.length) { grid.innerHTML = ''; return; }
-            if (layoutOf('binging') === 'grid2') {
-                grid.className = "grid grid-cols-2 gap-4";
-                grid.innerHTML = related.map(i => createPortraitCardHTML(i)).join('');
-            } else {
-                grid.className = "grid grid-cols-1 sm:grid-cols-2 gap-5";
-                grid.innerHTML = related.map(i => createSingleWideCardHTML(i)).join('');
-            }
             lucide.createIcons();
         }
 
         function renderAllGrids() {
             renderHomeGrid();
-            renderKeepBinging();
             renderUpcomingGrids();
             if (!document.getElementById('watchlistView').classList.contains('hidden')) {
                 renderWatchlistView();
@@ -1315,7 +1285,7 @@
                 return;
             }
 
-            if (layoutOf('home') === 'grid2') {
+            if (currentLayoutMode === 'grid2') {
                 grid.className = "grid grid-cols-2 sm:grid-cols-3 gap-4";
                 grid.innerHTML = filteredReviews.map(item => createPortraitCardHTML(item)).join('');
             } else {
@@ -1418,14 +1388,19 @@
             const homeUp = document.getElementById('homeUpcomingGrid');
             const fullUp = document.getElementById('upcomingFullGrid');
 
-            const classFor = g2 => g2 ? "grid grid-cols-2 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-4";
+            const isGrid2 = currentLayoutMode === 'grid2';
+            const gridClass = isGrid2 ? "grid grid-cols-2 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-4";
+
+            if (homeUp) homeUp.className = gridClass;
+            if (fullUp) fullUp.className = gridClass;
+
             const visible = upcomingList.filter(isUpcomingActive);
-            const htmlFor = g2 => visible.length
-                ? visible.map(u => createUpcomingCardHTML(u, g2)).join('')
+            const html = visible.length
+                ? visible.map(u => createUpcomingCardHTML(u, isGrid2)).join('')
                 : `<p class="text-xs text-theme-muted col-span-full">No upcoming releases right now. Check back soon!</p>`;
 
-            if (homeUp) { const g2 = layoutOf('homeUpcoming') === 'grid2'; homeUp.className = classFor(g2); homeUp.innerHTML = htmlFor(g2); }
-            if (fullUp) { const g2 = layoutOf('upcoming') === 'grid2'; fullUp.className = classFor(g2); fullUp.innerHTML = htmlFor(g2); }
+            if (homeUp) homeUp.innerHTML = html;
+            if (fullUp) fullUp.innerHTML = html;
             lucide.createIcons();
         }
 
@@ -1994,18 +1969,27 @@
 
                     <div id="adDetailSlot" class="hidden mb-8 overflow-hidden flex justify-center"></div>
 
-                    <!-- KEEP BINGING SECTION (same cards + Single/2-Col switch as the Home page) -->
+                    <!-- KEEP BINGING SECTION -->
                     <div>
-                        <div class="flex items-center justify-between gap-3 mb-3">
-                            <h2 class="text-lg font-extrabold text-theme-main">Keep Binging</h2>
-                            <button onclick="toggleLayoutMode('binging')" data-section="binging" class="layout-toggle-btn shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main hover:border-rose-500/50 transition"></button>
+                        <h2 class="text-lg font-extrabold text-theme-main mb-3">Keep Binging</h2>
+                        <div class="grid grid-cols-2 gap-3.5">
+                            ${relatedItems.slice(0, 4).map(rel => `
+                                <div onclick="openDetailView('${esc(rel.id)}')" class="cursor-pointer group">
+                                    <div class="relative h-28 sm:h-36 rounded-2xl overflow-hidden bg-theme-card border border-theme mb-1.5">
+                                        <img src="${esc(rel.backdrop)}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                                        <span class="absolute bottom-2 left-2.5 text-sm font-black text-white uppercase">${esc(rel.title)}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[11px] text-theme-muted">
+                                        <span class="px-1.5 py-0.5 rounded bg-theme-card border border-theme text-amber-500 font-bold">★ ${esc(rel.rating)}</span>
+                                        <span>${esc(rel.year)} • ${esc(rel.category.toUpperCase())}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
-                        <div id="keepBingingGrid" class="grid grid-cols-1 gap-5"></div>
                     </div>
                 </div>
             `;
-            renderKeepBinging();
-            updateLayoutToggleButtonsUI();
             injectAd('adDetailSlot', getAdsConfig().detailBanner);
             lucide.createIcons();
         }
@@ -2371,9 +2355,9 @@
                 grid.innerHTML = '';
             } else {
                 empty.classList.add('hidden');
-                grid.className = layoutOf('library') === 'grid2' ? "grid grid-cols-2 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-5";
-                const revHtml = matchedReviews.map(i => layoutOf('library') === 'grid2' ? createPortraitCardHTML(i) : createSingleWideCardHTML(i)).join('');
-                const upHtml = matchedUpcoming.map(u => createUpcomingCardHTML(u, layoutOf('library') === 'grid2')).join('');
+                grid.className = currentLayoutMode === 'grid2' ? "grid grid-cols-2 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-5";
+                const revHtml = matchedReviews.map(i => currentLayoutMode === 'grid2' ? createPortraitCardHTML(i) : createSingleWideCardHTML(i)).join('');
+                const upHtml = matchedUpcoming.map(u => createUpcomingCardHTML(u, currentLayoutMode === 'grid2')).join('');
                 grid.innerHTML = revHtml + upHtml;
                 lucide.createIcons();
             }
@@ -2628,4 +2612,3 @@
     </script>
 </body>
 </html>
-
