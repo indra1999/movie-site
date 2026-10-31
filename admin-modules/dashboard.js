@@ -42,7 +42,7 @@
     window.renderAdminDashboard = function () {
         const el = document.getElementById('tabSection-dashboard'); if (!el) return;
         const R = reviews(), U = upcoming(), C = comments();
-        const nComments = Object.values(C).reduce((a, l) => a + (Array.isArray(l) ? l.length : 0), 0);
+        const nComments = window.__cgCommentCount || 0;
         const scored = R.filter(r => score(r) !== null);
         const avg = scored.length ? (scored.reduce((a, r) => a + score(r), 0) / scored.length).toFixed(1) : '—';
         const tv = R.reduce((a, r) => a + totalViews(r), 0);
@@ -50,20 +50,19 @@
         const maxV = top.length ? totalViews(top[0]) : 1;
         const byCat = {}; R.forEach(r => byCat[r.category || 'Other'] = (byCat[r.category || 'Other'] || 0) + 1);
         const issues = audit(R);
+        const demoIds = new Set([].concat((window.CINE_DEMO || {}).reviews || [], (window.CINE_DEMO || {}).upcoming || []).map(x => x && x.id));
+        const demoCount = R.filter(x => demoIds.has(x.id)).length + U.filter(x => demoIds.has(x.id)).length;
         const hour = new Date().getHours();
         const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-        const defaultPass = !localStorage.getItem('cineguide_admin_pass');
-        const bs = safeParse('cineguide_backup_state', {});
-        const lastBk = bs.lastBackupAt ? new Date(bs.lastBackupAt).toLocaleString() : 'never';
+        const cs = (window.CloudStore && CloudStore.info) ? CloudStore.info() : { email: '', status: 'idle', dirty: false };
         const recent = [...R].sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0)).slice(0, 5);
 
         el.innerHTML = `
         <div class="mb-6"><h1 class="text-2xl font-black">${greet}, Admin 👋</h1>
             <p class="text-xs text-slate-400 mt-1">Overview of your site • Press <kbd class="px-1.5 py-0.5 rounded bg-elevated text-[10px]">Ctrl</kbd>+<kbd class="px-1.5 py-0.5 rounded bg-elevated text-[10px]">K</kbd> to jump anywhere</p></div>
-        ${defaultPass ? `<div class="mb-4 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/40 text-xs text-rose-300 flex items-center justify-between gap-3"><span><b>Security:</b> you are still using the default password (admin123). Change it now.</span><button onclick="switchAdminTab('settings')" class="px-3 py-1.5 rounded-lg accent-bg text-white font-bold shrink-0">Change</button></div>` : ''}
         <div class="mb-6 p-3.5 rounded-2xl bg-card border border-subtle text-xs flex items-center justify-between gap-3 flex-wrap">
-            <span class="text-slate-300"><i data-lucide="shield-check" class="w-4 h-4 inline -mt-0.5 text-emerald-500"></i> Last backup: <b>${esc(lastBk)}</b>${bs.dirty ? ' <span class="text-amber-400">• unsaved changes</span>' : ''}</span>
-            <button onclick="switchAdminTab('settings')" class="px-3 py-1.5 rounded-lg bg-elevated font-bold hover:bg-white/10">Open backups</button></div>
+            <span class="text-slate-300"><i data-lucide="cloud" class="w-4 h-4 inline -mt-0.5 text-emerald-500"></i> Cloud storage: <b>${esc(cs.email || 'signed in')}</b>${cs.dirty ? ' <span class="text-amber-400">• saving…</span>' : ' <span class="text-emerald-400">• all changes saved</span>'}</span>
+            <button onclick="switchAdminTab('settings')" class="px-3 py-1.5 rounded-lg bg-elevated font-bold hover:bg-white/10">Account &amp; backup</button></div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             ${card('Reviews', num(R.length), 'film', 'text-rose-500')}
@@ -91,6 +90,7 @@
                 <button onclick="switchAdminTab('upcoming')" class="px-3.5 py-2 rounded-xl bg-elevated hover:bg-white/10">+ Upcoming</button>
                 <button onclick="dashDownloadSitemap()" class="px-3.5 py-2 rounded-xl bg-elevated hover:bg-white/10">Generate sitemap.xml</button>
                 <button onclick="dashExportCSV()" class="px-3.5 py-2 rounded-xl bg-elevated hover:bg-white/10">Export reviews (CSV)</button>
+                ${demoCount ? `<button onclick="dashRemoveDemo()" class="px-3.5 py-2 rounded-xl bg-rose-500/15 text-rose-300 hover:bg-rose-500/25">Remove ${demoCount} demo posts</button>` : ''}
                 <a href="index.html" target="_blank" class="px-3.5 py-2 rounded-xl bg-elevated hover:bg-white/10">View live site ↗</a></div></div>
 
         <div class="p-4 rounded-2xl bg-card border border-subtle mb-6"><div class="flex items-center justify-between mb-3"><h2 class="font-extrabold text-sm">Content health audit</h2><span class="text-[11px] text-slate-400">${issues.length} of ${R.length} posts need work</span></div>
@@ -116,6 +116,17 @@
                 .map(x => x.replace(/&/g, '&amp;')));
         download('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`, 'application/xml');
         showAdminToast('sitemap.xml downloaded — upload it next to index.html');
+    };
+    window.dashRemoveDemo = function () {
+        const D = window.CINE_DEMO || {};
+        const ids = new Set([].concat(D.reviews || [], D.upcoming || []).map(x => x && x.id));
+        const R = reviews(), U = upcoming();
+        const r2 = R.filter(x => !ids.has(x.id)), u2 = U.filter(x => !ids.has(x.id));
+        const n = (R.length - r2.length) + (U.length - u2.length);
+        if (!n) { showAdminToast('No demo posts found'); return; }
+        if (!confirm('Delete ' + n + ' demo posts from the website? Your own posts are not touched.')) return;
+        safeSave('cineguide_custom_reviews', r2); safeSave('cineguide_upcoming', u2);
+        renderAdminDashboard(); showAdminToast(n + ' demo posts removed');
     };
     window.dashExportCSV = function () {
         const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
