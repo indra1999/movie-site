@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Page not found — CINEGUIDE</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e11d48'/%3E%3Cpath d='M26 20l20 12-20 12z' fill='white'/%3E%3C/svg%3E">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#090a0f;color:#f8fafc;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-align:center}
+  .box{max-width:420px;width:100%}
+  .logo{font-weight:900;letter-spacing:.08em;font-size:18px;margin-bottom:28px}
+  .logo span{color:#e11d48}
+  .code{font-size:96px;font-weight:900;line-height:1;margin:0;background:linear-gradient(135deg,#e11d48,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h1{font-size:22px;margin:14px 0 8px}
+  p{color:#94a3b8;font-size:14px;line-height:1.6;margin:0 0 6px}
+  .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+  a,button{font:inherit;font-weight:700;font-size:14px;padding:12px 22px;border-radius:12px;border:1px solid rgba(255,255,255,.12);cursor:pointer;text-decoration:none}
+  .primary{background:#e11d48;border-color:#e11d48;color:#fff}
+  .ghost{background:#12141d;color:#f8fafc}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo"><span>CINE</span>GUIDE</div>
+    <p class="code">404</p>
+    <h1>Oops! This page is missing</h1>
+    <p>The link you opened is wrong or the review has been removed.</p>
+    <p>আপনি যে লিংকটি খুলেছেন সেটি ভুল অথবা রিভিউটি সরিয়ে ফেলা হয়েছে।</p>
+    <div class="btns">
+      <a id="homeLink" class="primary" href="/">Go to Home</a>
+      <button class="ghost" onclick="history.length > 1 ? history.back() : location.href = document.getElementById('homeLink').href">Go back</button>
+    </div>
+  </div>
+<script>
+  // On GitHub project sites (user.github.io/repo/) the home page is /repo/, otherwise /
+  (function () {
+    var base = '/';
+    if (/\.github\.io$/.test(location.hostname)) {
+      var seg = location.pathname.split('/').filter(Boolean)[0];
+      if (seg) base = '/' + seg + '/';
+    }
+    document.getElementById('homeLink').href = base;
+  })();
+</script>
+</body>
+</html>
