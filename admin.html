@@ -204,6 +204,7 @@
             if (typeof initUsersCommentsModule === 'function') initUsersCommentsModule();
             if (typeof initSettingsSecurityModule === 'function') initSettingsSecurityModule();
             if (typeof initFeaturesModule === 'function') initFeaturesModule();
+            if (typeof initCloudPublishModule === 'function') initCloudPublishModule();
             lucide.createIcons();
         }
 
@@ -214,6 +215,13 @@
             lucide.createIcons();
         });
     </script>
+
+    <!-- FIREBASE (Google sign-in + "Publish to Everyone") -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="core-data/firebase-config.js"></script>
+    <script src="core-data/firebase-sync.js"></script>
 
     <!-- DATA LAYER (separate folder: posts, comments, API key live here) -->
     <script src="core-data/config.js"></script>
@@ -229,5 +237,6 @@
     <script src="admin-modules/settings-security.js"></script>
     <script src="admin-modules/features.js"></script>
     <script src="admin-modules/data-safety.js"></script>
+    <script src="admin-modules/cloud-publish.js"></script>
 </body>
 </html>

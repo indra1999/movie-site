@@ -53,6 +53,13 @@ core-data/
          }
        }
 
+       // সাইটের কনটেন্ট (পোস্ট, Upcoming...) — সবাই পড়তে পারবে, শুধু অ্যাডমিনের Google ইমেইল লিখতে পারবে
+       match /cg_site/{docId} {
+         allow read: if true;
+         allow write: if request.auth != null
+           && request.auth.token.email == 'YOUR_ADMIN_EMAIL@gmail.com';
+       }
+
        // CG Rating (সবার রেটিংয়ের গড়)
        match /cg_ratings/{postId} {
          allow read: if true;
@@ -74,6 +81,13 @@ core-data/
 4. Project settings -> Your apps -> Web (`</>`) -> config কপি করে `core-data/firebase-config.js`-এ বসান, তারপর Commit।
 
 > Firebase config পাবলিক রাখা নিরাপদ; সুরক্ষা আসে ওপরের Rules থেকে।
+
+## পোস্ট সবার ব্রাউজারে দেখানো ("Publish to Everyone")
+1. ওপরের Rules-এ `YOUR_ADMIN_EMAIL@gmail.com` বদলে **আপনার নিজের Gmail** বসিয়ে Publish করুন।
+2. `admin.html` -> Settings -> **Publish to Everyone (Cloud)** -> *Sign in with Google (admin)* (ওই Gmail দিয়ে)।
+3. এরপর পোস্ট বানালে/এডিট করলে/ডিলিট করলে অটো ক্লাউডে যায় (২-৩ সেকেন্ডে)। সব ভিজিটর পরের বার সাইট খুললেই দেখবে।
+4. নতুন ব্রাউজারে অ্যাডমিন খুললে আগে **Load from cloud** চাপুন, তারপর কাজ শুরু করুন।
+5. Firestore কাজ না করলে সাইট আগের মতো `site-data.json` ফাইল থেকে পড়ে (ব্যাকআপ হিসেবে)।
 
 ## সতর্কতা
 `admin.html` পাবলিক রিপোজিটরিতে থাকলে যে কেউ খুলতে পারবে, আর পোস্ট ব্রাউজারের localStorage-এ থাকে (সবার ডিভাইসে আলাদা)। সত্যিকারের অ্যাডমিন সুরক্ষা চাইলে আলাদা ব্যবস্থা লাগবে।

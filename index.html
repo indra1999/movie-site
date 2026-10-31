@@ -752,6 +752,17 @@
         // Optional file "site-data.json" (exported from Admin panel) so that every visitor sees admin content
         let siteData = {};
         async function loadSiteData() {
+            // 1) Cloud copy published from the admin panel (every visitor sees the same data)
+            let cloud = null;
+            try {
+                if (window.CineSync && CineSync.ready && CineSync.loadSiteContent) {
+                    const res = await Promise.race([CineSync.loadSiteContent(), new Promise(r => setTimeout(() => r('timeout'), 5000))]);
+                    if (res === 'timeout') cloud = safeParse('cineguide_cloud_cache', null);   // slow network: last known copy
+                    else if (res) { cloud = res; safeSave('cineguide_cloud_cache', res); }
+                }
+            } catch (e) { cloud = safeParse('cineguide_cloud_cache', null); }
+            if (cloud) { siteData = cloud; return; }
+            // 2) Fallback: optional site-data.json file in the repository
             try {
                 const r = await fetch('site-data.json', { cache: 'no-store' });
                 if (r.ok) siteData = await r.json();
