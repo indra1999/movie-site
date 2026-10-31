@@ -149,6 +149,73 @@
         }
     }
 
+
+    // ------------------------------------------------------------------------
+    // COMMUNITY PARENTAL GUIDE — শুধু লগইন করা ইউজাররা ভোট দিতে পারে
+    //   pg_votes/{postId}              -> counters (total, fam_yes, fam_no, c_sex_0..3 ...)
+    //   pg_votes/{postId}/votes/{uid}  -> { sex, violence, profanity, drugs (0-3), family: yes|no }
+    // এক ইউজার = এক পোস্টে এক ভোট (আবার দিলে আগেরটা বদলে যায়)।
+    // ------------------------------------------------------------------------
+    const PG_CATS = ['sex', 'violence', 'profanity', 'drugs'];
+    function pgDoc(postId) { return db.collection('pg_votes').doc(cgId(postId)); }
+    function pgDelta(vote, sign) {
+        const d = {};
+        PG_CATS.forEach(c => { if (vote && Number.isInteger(vote[c]) && vote[c] >= 0 && vote[c] <= 3) d['c_' + c + '_' + vote[c]] = sign; });
+        if (vote && (vote.family === 'yes' || vote.family === 'no')) d['fam_' + vote.family] = sign;
+        return d;
+    }
+    function pgApply(cur, delta, next) {
+        for (const k in delta) next[k] = Math.max(0, (next[k] !== undefined ? next[k] : (cur[k] || 0)) + delta[k]);
+    }
+    async function getPG(postId) {
+        if (!ready) return null;
+        try { const s = await pgDoc(postId).get(); return s.exists ? s.data() : {}; } catch (e) { console.warn('PG read failed', e); return null; }
+    }
+    async function getMyPG(postId) {
+        if (!ready || !user) return null;
+        try { const s = await pgDoc(postId).collection('votes').doc(user.uid).get(); return s.exists ? s.data() : null; } catch (e) { return null; }
+    }
+    async function submitPG(postId, vote) {
+        if (!ready) return 'unavailable';
+        if (!user) return 'needs-login';
+        const clean = {};
+        PG_CATS.forEach(c => { const n = Number(vote && vote[c]); if (vote && vote[c] !== undefined && Number.isInteger(n) && n >= 0 && n <= 3) clean[c] = n; });
+        if (vote && (vote.family === 'yes' || vote.family === 'no')) clean.family = vote.family;
+        if (!Object.keys(clean).length) return 'error';
+        const agg = pgDoc(postId), ref = agg.collection('votes').doc(user.uid);
+        try {
+            await db.runTransaction(async tx => {
+                const [a, v] = await Promise.all([tx.get(agg), tx.get(ref)]);
+                const cur = a.exists ? a.data() : {};
+                const next = {};
+                if (v.exists) pgApply(cur, pgDelta(v.data(), -1), next);
+                pgApply(cur, pgDelta(clean, 1), next);
+                next.total = (cur.total || 0) + (v.exists ? 0 : 1);
+                tx.set(agg, next, { merge: true });
+                tx.set(ref, Object.assign({}, clean, { uid: user.uid, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }));
+            });
+            return 'ok';
+        } catch (e) { console.warn('PG save failed', e); return 'error'; }
+    }
+    async function removePG(postId) {
+        if (!ready || !user) return 'unavailable';
+        const agg = pgDoc(postId), ref = agg.collection('votes').doc(user.uid);
+        try {
+            await db.runTransaction(async tx => {
+                const [a, v] = await Promise.all([tx.get(agg), tx.get(ref)]);
+                if (!v.exists) return;
+                const cur = a.exists ? a.data() : {};
+                const next = {};
+                pgApply(cur, pgDelta(v.data(), -1), next);
+                next.total = Math.max(0, (cur.total || 0) - 1);
+                tx.set(agg, next, { merge: true });
+                tx.delete(ref);
+            });
+            return 'ok';
+        } catch (e) { console.warn('PG remove failed', e); return 'error'; }
+    }
+    function isSignedIn() { return !!(ready && user); }
+
     function signInWithGoogle() {
         if (!ready) { if (window.showToast) window.showToast('Firebase not configured yet'); return; }
         auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
@@ -162,6 +229,7 @@
         db = firebase.firestore();
         auth.onAuthStateChanged(u => {
             user = u;
+            if (window.onCineAuthChange) window.onCineAuthChange(!!u);
             if (u) {
                 if (window.applyCloudUser) window.applyCloudUser(u.displayName || (u.email || 'User').split('@')[0], u.email || '');
                 pullAndMerge();
@@ -169,5 +237,5 @@
         });
     }
 
-    window.CineSync = { ready, onLocalSave, signInWithGoogle, signOut, getCG, submitCG, removeCG };
+    window.CineSync = { ready, onLocalSave, signInWithGoogle, signOut, getCG, submitCG, removeCG, getPG, getMyPG, submitPG, removePG, isSignedIn };
 })();
