@@ -242,5 +242,59 @@
         });
     }
 
-    window.CineSync = { ready, onLocalSave, signInWithGoogle, signOut, getCG, submitCG, removeCG, getPG, getMyPG, submitPG, removePG, isSignedIn, hasSession };
+    // ------------------------------------------------------------------------
+    // SITE CONTENT — posts/upcoming/ads... published by the admin for ALL visitors
+    //   cg_site/meta      -> { json: "{upcoming,categories,ads,deleted,features,footer}" }
+    //   cg_site/posts_0.. -> { json: "[ ...posts... ]" }   (split in chunks, Firestore doc limit = 1 MB)
+    // Everybody can read; only the admin e-mail written in the Firestore rules can write.
+    // ------------------------------------------------------------------------
+    function chunkList(list, maxChars) {
+        const chunks = []; let cur = [], size = 0;
+        list.forEach(x => {
+            const len = JSON.stringify(x).length;
+            if (cur.length && size + len > maxChars) { chunks.push(cur); cur = []; size = 0; }
+            cur.push(x); size += len;
+        });
+        if (cur.length || !chunks.length) chunks.push(cur);
+        return chunks;
+    }
+    async function loadSiteContent() {
+        if (!ready) return null;
+        const snap = await db.collection('cg_site').get();
+        if (snap.empty) return null;
+        const out = {}, parts = [];
+        snap.forEach(d => {
+            let v = null;
+            try { v = JSON.parse((d.data() || {}).json || 'null'); } catch (e) { return; }
+            if (d.id === 'meta' && v && typeof v === 'object') Object.assign(out, v);
+            else if (/^posts_\d+$/.test(d.id) && Array.isArray(v)) parts.push([parseInt(d.id.slice(6), 10), v]);
+        });
+        parts.sort((a, b) => a[0] - b[0]);
+        out.reviews = [].concat.apply([], parts.map(p => p[1]));
+        return out;
+    }
+    async function publishSiteContent(data) {
+        if (!ready) return { status: 'unavailable' };
+        if (!user || user.isAnonymous) return { status: 'needs-login' };
+        try {
+            const reviews = Array.isArray(data.reviews) ? data.reviews : [];
+            const meta = Object.assign({}, data); delete meta.reviews;
+            const chunks = chunkList(reviews, 250000);
+            const col = db.collection('cg_site');
+            const existing = await col.get();
+            const ts = firebase.firestore.FieldValue.serverTimestamp();
+            const batch = db.batch();
+            batch.set(col.doc('meta'), { json: JSON.stringify(meta), updatedAt: ts, by: user.email || '' });
+            chunks.forEach((c, i) => batch.set(col.doc('posts_' + i), { json: JSON.stringify(c), updatedAt: ts }));
+            existing.forEach(d => { if (/^posts_\d+$/.test(d.id) && parseInt(d.id.slice(6), 10) >= chunks.length) batch.delete(d.ref); });
+            await batch.commit();
+            return { status: 'ok', posts: reviews.length, chunks: chunks.length };
+        } catch (e) {
+            console.warn('Publish failed', e);
+            return { status: e && e.code === 'permission-denied' ? 'denied' : 'error', message: (e && e.message) || '' };
+        }
+    }
+    function userEmail() { return user && user.email ? user.email : ''; }
+
+    window.CineSync = { ready, onLocalSave, signInWithGoogle, signOut, getCG, submitCG, removeCG, getPG, getMyPG, submitPG, removePG, isSignedIn, hasSession, loadSiteContent, publishSiteContent, userEmail };
 })();
