@@ -28,66 +28,42 @@ core-data/
 2. Authentication -> Get started -> **Google** চালু করুন।
    Settings -> Authorized domains -> `<username>.github.io` যোগ করুন
 3. Firestore Database -> Create database -> Rules-এ এটা বসিয়ে Publish:
-   ```
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{db}/documents {
-       match /users/{uid} {
-         allow read, write: if request.auth != null && request.auth.uid == uid;
-       }
-
-       // Community Parental Guide (শুধু লগইন করা ইউজার ভোট দিতে পারে)
-       match /pg_votes/{postId} {
-         allow read: if true;
-         allow create, update: if request.auth != null
-           && request.resource.data.keys().hasOnly(['total', 'fam_yes', 'fam_no', 'c_sex_0', 'c_sex_1', 'c_sex_2', 'c_sex_3', 'c_violence_0', 'c_violence_1', 'c_violence_2', 'c_violence_3', 'c_profanity_0', 'c_profanity_1', 'c_profanity_2', 'c_profanity_3', 'c_drugs_0', 'c_drugs_1', 'c_drugs_2', 'c_drugs_3']);
-         match /votes/{uid} {
-           allow read, delete: if request.auth != null && request.auth.uid == uid;
-           allow create, update: if request.auth != null && request.auth.uid == uid
-             && request.resource.data.keys().hasOnly(['uid','sex','violence','profanity','drugs','family','updatedAt'])
-             && request.resource.data.get('sex', 0) in [0,1,2,3]
-             && request.resource.data.get('violence', 0) in [0,1,2,3]
-             && request.resource.data.get('profanity', 0) in [0,1,2,3]
-             && request.resource.data.get('drugs', 0) in [0,1,2,3]
-             && request.resource.data.get('family', 'yes') in ['yes','no'];
-         }
-       }
-
-       // সাইটের কনটেন্ট (পোস্ট, Upcoming...) — সবাই পড়তে পারবে, শুধু অ্যাডমিনের Google ইমেইল লিখতে পারবে
-       match /cg_site/{docId} {
-         allow read: if true;
-         allow write: if request.auth != null
-           && request.auth.token.email == 'YOUR_ADMIN_EMAIL@gmail.com';
-       }
-
-       // CG Rating (সবার রেটিংয়ের গড়)
-       match /cg_ratings/{postId} {
-         allow read: if true;
-         allow create, update: if request.auth != null
-           && request.resource.data.count is int && request.resource.data.sum is int
-           && request.resource.data.count >= 0
-           && request.resource.data.sum >= 0
-           && request.resource.data.sum <= request.resource.data.count * 10;
-         match /votes/{uid} {
-           allow read, delete: if request.auth != null && request.auth.uid == uid;
-           allow create, update: if request.auth != null && request.auth.uid == uid
-             && request.resource.data.value is int
-             && request.resource.data.value >= 1 && request.resource.data.value <= 10;
-         }
-       }
-     }
-   }
-   ```
+   ➜ রিপোর `firestore.rules` ফাইলটি খুলে **পুরোটা** কপি করে বসান, `indromondol2@gmail.com` জায়গায় আপনার (ছোট হাতের) ইমেইল দিন, তারপর Publish। Rules Playground-এ একবার টেস্ট করে নিন।
 4. Project settings -> Your apps -> Web (`</>`) -> config কপি করে `core-data/firebase-config.js`-এ বসান, তারপর Commit।
 
 > Firebase config পাবলিক রাখা নিরাপদ; সুরক্ষা আসে ওপরের Rules থেকে।
 
-## পোস্ট সবার ব্রাউজারে দেখানো ("Publish to Everyone")
-1. ওপরের Rules-এ `YOUR_ADMIN_EMAIL@gmail.com` বদলে **আপনার নিজের Gmail** বসিয়ে Publish করুন।
-2. `admin.html` -> Settings -> **Publish to Everyone (Cloud)** -> *Sign in with Google (admin)* (ওই Gmail দিয়ে)।
-3. এরপর পোস্ট বানালে/এডিট করলে/ডিলিট করলে অটো ক্লাউডে যায় (২-৩ সেকেন্ডে)। সব ভিজিটর পরের বার সাইট খুললেই দেখবে।
-4. নতুন ব্রাউজারে অ্যাডমিন খুললে আগে **Load from cloud** চাপুন, তারপর কাজ শুরু করুন।
-5. Firestore কাজ না করলে সাইট আগের মতো `site-data.json` ফাইল থেকে পড়ে (ব্যাকআপ হিসেবে)।
+## Cloud-only admin (nothing is stored in the browser)
 
-## সতর্কতা
-`admin.html` পাবলিক রিপোজিটরিতে থাকলে যে কেউ খুলতে পারবে, আর পোস্ট ব্রাউজারের localStorage-এ থাকে (সবার ডিভাইসে আলাদা)। সত্যিকারের অ্যাডমিন সুরক্ষা চাইলে আলাদা ব্যবস্থা লাগবে।
+All content you manage (posts, upcoming releases, categories, ads, footer texts, site features, deleted list)
+is saved **only in Firebase Firestore**. The TMDB API key and custom domain are saved in a separate document
+(`cg_admin/settings`) that only the admin can read. The admin panel keeps the data in memory while it is open and
+saves every change to the cloud automatically (about 1 second later). The public site reads the same cloud data.
+
+### One-time setup
+1. Firebase Console -> **Authentication -> Sign-in method**: enable **Email/Password** (and **Google** if you want it).
+2. **Authentication -> Users -> Add user**: create your admin account (your e-mail + a strong password).
+   The first time you sign in with a password account, the panel sends a **verification e-mail**. Open the link, then sign in again.
+   (Signing in with Google needs no verification.)
+3. **Firestore -> Rules**: paste the rules above, replace `indromondol2@gmail.com` with your admin e-mail, **Publish**.
+4. Open `admin.html`, sign in with that e-mail. Only the account named in the rules can save anything; any other account is refused.
+
+### Good to know
+- If two devices/tabs edit at the same time, the second save is refused (revision check) and you choose to overwrite or reload.
+- Emptying every post asks for confirmation first.
+- **Settings -> Download backup file** exports `site-data.json` (no API keys inside) if you want an extra copy.
+- If this browser still holds posts from the old local version, a banner offers a one-time **upload to cloud and remove local copy**.
+- Still stored per device (not in the cloud yet): visitor comments, view counters, and the watchlist of visitors who are not signed in.
+- `admin.html` is a public page. The real protection is the Firestore rules above, not the page itself.
+
+## Security checklist (one time)
+- **API key সীমাবদ্ধ করুন:** Google Cloud Console -> APIs & Services -> Credentials -> Browser key -> *HTTP referrers*: `https://<username>.github.io/*`
+- **App Check (recommended):** Firebase -> App Check -> reCAPTCHA v3 চালু করুন, তারপর Firestore-এ enforce করুন (বট ভোট ঠেকায়)।
+- `core-data/config.js`-এ TMDB key বসাবেন না (ফাইলটি পাবলিক); অ্যাডমিন প্যানেল থেকে বসান।
+- `robots.txt`-এ নিজের সাইটের ঠিকানা বসান; অ্যাডমিন Dashboard -> *Generate sitemap.xml* করে রুটে আপলোড দিন এবং Google Search Console-এ জমা দিন।
+- Firestore: posts এখন ৬০০ KB-এর chunk-এ, upcoming আলাদা `upcoming_N` ডকুমেন্টে সেভ হয়। কোনো পোস্ট ৯০০ KB-এর বড় হলে সেভ থেমে কারণ দেখায় (base64 ছবির বদলে URL ব্যবহার করুন)।
+- ভিজিটরের ব্রাউজারে শেষ সফল সাইট-ডেটা ক্যাশ থাকে; revision না বদলালে শুধু ১টি Firestore read হয়।
+
+## Comments & demo posts
+- Comments are now shared (Firestore `cg_comments`): visitors sign in with Google to post; the author or the admin can delete (admin tab *Users & Comments*). Add the new `cg_comments` rules from `firestore.rules`.
+- Demo posts show only until you publish your own content. After the first save they never come back. The Dashboard has a *Remove demo posts* button.

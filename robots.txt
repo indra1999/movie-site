@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Replace with your real site address, then upload the sitemap.xml generated from the admin Dashboard:
+Sitemap: https://YOUR-USERNAME.github.io/YOUR-REPO/sitemap.xml

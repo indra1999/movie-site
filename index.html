@@ -15,9 +15,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"CINEGUIDE","description":"Movie, series and anime reviews with parental guide"}</script>
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.469.0"></script>
     <script>window.lucide = window.lucide || { createIcons: function () {} };</script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -537,6 +537,7 @@
 
             <div id="commentsListContainer" class="p-4 overflow-y-auto flex-1 space-y-3"></div>
 
+            <p class="px-4 py-2 text-[11px] text-theme-muted border-t border-theme">Comments are public. Sign in with Google to post; please keep it respectful.</p>
             <form onsubmit="submitNewComment(event)" class="p-3.5 border-t border-theme bg-theme-main flex gap-2">
                 <input type="text" id="newCommentInput" required placeholder="Add to the conversation..." class="flex-1 px-3.5 py-2.5 rounded-xl bg-theme-card border border-theme text-theme-main text-xs sm:text-sm focus:outline-none focus:border-rose-500">
                 <button type="submit" class="px-4 py-2.5 rounded-xl accent-bg text-white font-bold text-xs shrink-0 hover:opacity-90">Post</button>
@@ -749,20 +750,29 @@
             try { return localStorage.getItem(key); } catch (e) { return null; }
         }
 
-        // Optional file "site-data.json" (exported from Admin panel) so that every visitor sees admin content
+        // Site content comes from the cloud (Firestore). A site-data.json file is only an optional fallback.
         let siteData = {};
+        const SITE_CACHE_KEY = 'cineguide_site_cache';
+        function saveSiteCache(d) {
+            try { localStorage.setItem(SITE_CACHE_KEY, JSON.stringify({ rev: d.rev || 0, at: Date.now(), data: d })); }
+            catch (e) { try { localStorage.removeItem(SITE_CACHE_KEY); } catch (e2) {} }
+        }
         async function loadSiteData() {
-            // 1) Cloud copy published from the admin panel (every visitor sees the same data)
+            let cache = null;
+            try { cache = JSON.parse(localStorage.getItem(SITE_CACHE_KEY) || 'null'); } catch (e) {}
+            if (cache && !cache.data) cache = null;
             let cloud = null;
             try {
                 if (window.CineSync && CineSync.ready && CineSync.loadSiteContent) {
-                    const res = await Promise.race([CineSync.loadSiteContent(), new Promise(r => setTimeout(() => r('timeout'), 5000))]);
-                    if (res === 'timeout') cloud = safeParse('cineguide_cloud_cache', null);   // slow network: last known copy
-                    else if (res) { cloud = res; safeSave('cineguide_cloud_cache', res); }
+                    const p = CineSync.loadSiteContent(cache ? { rev: cache.rev, data: cache.data } : null);
+                    // returning visitors: short wait, then show the cached copy; first visit: wait longer
+                    const res = await Promise.race([p, new Promise(r => setTimeout(() => r('timeout'), cache ? 4000 : 15000))]);
+                    if (res === 'timeout') p.then(d => { if (d) saveSiteCache(d); }).catch(() => {});
+                    else if (res) cloud = res;
                 }
-            } catch (e) { cloud = safeParse('cineguide_cloud_cache', null); }
-            if (cloud) { siteData = cloud; return; }
-            // 2) Fallback: optional site-data.json file in the repository
+            } catch (e) { cloud = null; }
+            if (cloud) { siteData = cloud; saveSiteCache(cloud); return; }
+            if (cache) { siteData = cache.data; return; }   // slow network: the last good copy, never just the demo posts
             try {
                 const r = await fetch('site-data.json', { cache: 'no-store' });
                 if (r.ok) siteData = await r.json();
@@ -772,12 +782,12 @@
             const ids = new Set(local.map(x => x.id));
             return [...local, ...(Array.isArray(remote) ? remote : []).filter(x => !ids.has(x.id))];
         }
-        function getCustomReviews() { return mergeById(safeParse('cineguide_custom_reviews', []), siteData.reviews); }
-        function getCustomUpcoming() { return mergeById(safeParse('cineguide_upcoming', []), siteData.upcoming); }
-        // ids deleted from the admin panel (this browser + site-data.json) never show again
-        function dropDeleted(list) { return CineStore.withoutDeleted(list, siteData.deleted); }
+        function getCustomReviews() { return mergeById([], siteData.reviews); }   // cloud only: nothing is read from this browser
+        function getCustomUpcoming() { return mergeById([], siteData.upcoming); }
+        // ids deleted from the admin panel (stored in the cloud copy) never show again
+        function dropDeleted(list) { const gone = new Set(siteData.deleted || []); return (list || []).filter(x => x && !gone.has(x.id)); }
         function getCustomCategories() {
-            const all = [...safeParse('cineguide_custom_categories', []), ...(siteData.categories || [])];
+            const all = [...(siteData.categories || [])];
             return [...new Set(all)];
         }
         // --- SITE FEATURES (admin panel -> "Site Features"): on/off + numbers ---
@@ -801,20 +811,16 @@
                 keepBinging:    { enabled: bool(k.enabled, D.keepBinging.enabled), count: num(k.count, 1, 12, D.keepBinging.count) }
             };
         }
-        // admin's browser: its own saved settings (instant preview); every visitor: site-data.json
+        // feature settings come from the cloud copy published by the admin panel
         function getFeatures() {
-            let saved = null;
-            try { saved = JSON.parse(localStorage.getItem('cineguide_features') || 'null'); } catch (e) {}
-            return normalizeFeatures(saved || siteData.features);
+            return normalizeFeatures(siteData.features);
         }
 
         function getAdsConfig() {
-            const local = safeParse('cineguide_ads_config', null);
-            const hasLocal = local && (local.topBanner || local.detailBanner || local.footerBanner);
-            return hasLocal ? local : (siteData.ads || {});
+            return siteData.ads || {};
         }
         function getFooterSetting(name) {
-            return safeText('cineguide_footer_' + name) || (siteData.footer || {})[name] || '';
+            return (siteData.footer || {})[name] || '';
         }
 
         function toEmbedUrl(url) {
@@ -868,7 +874,8 @@
         let userRatings = safeParse('cineguide_user_ratings', {});
         let notifyUpcomingIds = safeParse('cineguide_notify_upcoming', []);
         let storedViews = safeParse('cineguide_views', {});
-        let storedComments = safeParse('cineguide_comments', {});
+        let storedComments = {};   // (old per-device comments are no longer used)
+        let cloudComments = {}, cloudCommentsAt = {};
         let currentUser = safeParse('cineguide_user', null);
         
         // Point 18 & 19: Layout Mode ('single' or 'grid2')
@@ -1040,7 +1047,7 @@
             });
         }
         const _renderDetailContent = renderDetailContent;
-        renderDetailContent = function () { _renderDetailContent(); enhanceDetail(); };
+        renderDetailContent = function () { _renderDetailContent(); enhanceDetail(); if (currentDetailItem && !currentDetailItem.isUpcoming) loadCloudComments(currentDetailItem); };
         const _switchView = switchView;
         switchView = function (v) {
             _switchView(v);
@@ -1253,9 +1260,11 @@
         }
 
         function loadReviewsData() {
-            allReviews = dropDeleted(mergeById(getCustomReviews(), defaultReviews)).map(normalizeReview);
+            // demo posts only appear until the admin has published real content (then they never come back)
+            const demoOn = !(siteData && (siteData.rev || (siteData.reviews || []).length));
+            allReviews = dropDeleted(mergeById(getCustomReviews(), demoOn ? defaultReviews : [])).map(normalizeReview);
             filteredReviews = [...allReviews];
-            upcomingList = dropDeleted(mergeById(getCustomUpcoming(), defaultUpcoming));
+            upcomingList = dropDeleted(mergeById(getCustomUpcoming(), demoOn ? defaultUpcoming : []));
         }
 
         // Point 17 Fixed: High-contrast active & inactive states in both Light and Dark mode
@@ -1399,8 +1408,7 @@
         }
 
         function getItemComments(item) {
-            const userAdded = storedComments[item.id] || [];
-            return [...userAdded, ...(item.defaultComments || [])];
+            return [...(cloudComments[item.id] || []), ...(item.defaultComments || [])];
         }
 
         // --- 7. RENDER CARDS IN EITHER SINGLE VIEW OR 2-COLUMN PORTRAIT VIEW ---
@@ -1467,7 +1475,7 @@
                         <div class="flex items-center gap-2 text-xs font-extrabold text-amber-500">
                             <span>★ ${esc(item.rating)}</span>
                             ${myRating ? `<span class="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-500 text-[10px]">Your rating: ${myRating}/10</span>` : ''}
-                            <span class="text-theme-muted font-medium">• <i data-lucide="eye" class="w-3.5 h-3.5 inline -mt-0.5"></i> ${totalViews} views</span>
+                            <span class="hidden">• <i data-lucide="eye" class="w-3.5 h-3.5 inline -mt-0.5"></i> ${totalViews} views</span>
                         </div>
                         <div class="text-[11px] font-bold text-emerald-500 mt-0.5">${safetyBadge} • ${esc(item.language)}</div>
                     </div>
@@ -2123,12 +2131,12 @@
                                     <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                                     <span id="liveTimeAgoText">${formatTimeAgo(item.uploadedAt)}</span>
                                 </span>
-                                <span class="flex items-center gap-1 text-theme-main font-bold">
+                                <span class="hidden items-center gap-1 text-theme-main font-bold">
                                     <i data-lucide="eye" class="w-3.5 h-3.5 text-emerald-500"></i>
                                     <span id="liveViewCountText">${totalViews}</span>
                                 </span>
                                 <button onclick="openCommentsModal()" class="flex items-center gap-1 text-[#e0533c] font-bold hover:underline">
-                                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Add Comment (${comments.length})
+                                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Add Comment (<span id="detailCommentCount">${comments.length}</span>)
                                 </button>
                             </div>
                         </div>
@@ -2536,6 +2544,7 @@
             if (!currentDetailItem) return;
             document.getElementById('commentModalSubtitle').textContent = `Discussion for ${currentDetailItem.title} (${currentDetailItem.year})`;
             renderCommentsList();
+            loadCloudComments(currentDetailItem, true);
             const modal = document.getElementById('commentsModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -2558,34 +2567,50 @@
                 <div class="p-3 rounded-xl bg-theme-main border border-theme text-xs">
                     <div class="flex items-center justify-between mb-1">
                         <span class="font-bold text-theme-main">${esc(c.user)}</span>
-                        <span class="text-[10px] text-theme-muted">${esc(c.ts ? formatTimeAgo(c.ts) : c.time)}</span>
+                        <span class="text-[10px] text-theme-muted">${esc(c.ts ? formatTimeAgo(c.ts) : c.time)}${(c.id && c.uid && window.CineSync && CineSync.getUser && CineSync.getUser() && CineSync.getUser().uid === c.uid) ? ` • <button type="button" onclick="deleteMyComment('${esc(c.id)}')" class="text-rose-400 hover:underline">Delete</button>` : ''}</span>
                     </div>
                     <p class="text-theme-muted leading-relaxed">${esc(c.text)}</p>
                 </div>
             `).join('');
         }
 
-        function submitNewComment(e) {
+        function mapCloudComment(c) { return { id: c.id, uid: c.uid, user: c.name || 'User', text: c.text, ts: c.createdAt || Date.now() }; }
+        async function loadCloudComments(item, force) {
+            if (!item || !window.CineSync || !CineSync.ready || !CineSync.getComments) return;
+            const id = item.id;
+            if (!force && cloudCommentsAt[id] && Date.now() - cloudCommentsAt[id] < 60000) return;
+            const list = await CineSync.getComments(id);
+            if (!list) return;
+            cloudCommentsAt[id] = Date.now();
+            cloudComments[id] = list.map(mapCloudComment);
+            if (currentDetailItem && currentDetailItem.id === id) {
+                const n = getItemComments(item).length;
+                const b1 = document.getElementById('fixedFloatingCommentCount'); if (b1) b1.textContent = n;
+                const b2 = document.getElementById('detailCommentCount'); if (b2) b2.textContent = n;
+                const modal = document.getElementById('commentsModal');
+                if (modal && !modal.classList.contains('hidden')) renderCommentsList();
+            }
+        }
+        async function submitNewComment(e) {
             e.preventDefault();
             if (!currentDetailItem) return;
             const input = document.getElementById('newCommentInput');
             const text = input.value.trim().slice(0, 500);
             if (!text) return;
-
-            const userName = currentUser ? currentUser.name : "Guest Viewer";
-            if (!storedComments[currentDetailItem.id]) storedComments[currentDetailItem.id] = [];
-            storedComments[currentDetailItem.id].unshift({
-                user: userName,
-                text: text,
-                time: "Just now",
-                ts: Date.now()
-            });
-            safeSave('cineguide_comments', storedComments);
+            if (!(window.CineSync && CineSync.isSignedIn())) { showToast('Sign in with Google to post a comment'); if (window.CineSync) CineSync.signInWithGoogle(); return; }
+            const btn = e.target.querySelector('button[type=submit]'); if (btn) btn.disabled = true;
+            const r = await CineSync.addComment(currentDetailItem.id, text, currentUser ? currentUser.name : '');
+            if (btn) btn.disabled = false;
+            if (r !== 'ok') { showToast('Could not post the comment. Please try again.'); return; }
             input.value = '';
+            await loadCloudComments(currentDetailItem, true);
             renderCommentsList();
-
-            const badge = document.getElementById('fixedFloatingCommentCount');
-            if (badge) badge.textContent = getItemComments(currentDetailItem).length;
+        }
+        async function deleteMyComment(id) {
+            if (!confirm('Delete your comment?')) return;
+            await CineSync.deleteComment(id);
+            await loadCloudComments(currentDetailItem, true);
+            renderCommentsList();
         }
 
         // --- 12. ACTOR BIO & FILMOGRAPHY VIEW ---

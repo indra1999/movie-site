@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    // ===== 1) PUT YOUR ADMIN E-MAIL HERE (lower-case, must be verified) =====
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'indromondol2@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+    // signed in with Google / e-mail (NOT an anonymous guest)
+    function realUser() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // ---- CG Rating helpers: the average may only change together with the caller's own vote
+    function rVote(postId) {
+      return /databases/$(db)/documents/cg_ratings/$(postId)/votes/$(request.auth.uid);
+    }
+    function ratingDeltaOk(postId) {
+      return request.resource.data.count ==
+               (resource == null ? 0 : resource.data.get('count', 0))
+               + (existsAfter(rVote(postId)) ? 1 : 0) - (exists(rVote(postId)) ? 1 : 0)
+          && request.resource.data.sum ==
+               (resource == null ? 0 : resource.data.get('sum', 0))
+               - (exists(rVote(postId)) ? get(rVote(postId)).data.value : 0)
+               + (existsAfter(rVote(postId)) ? getAfter(rVote(postId)).data.value : 0);
+    }
+
+    // ---- Parental Guide helpers
+    function pVote(postId) {
+      return /databases/$(db)/documents/pg_votes/$(postId)/votes/$(request.auth.uid);
+    }
+    function nn(d, k) { return d.get(k, 0) is int && d.get(k, 0) >= 0; }
+    function catOk(d, c) {
+      return nn(d, c + '_0') && nn(d, c + '_1') && nn(d, c + '_2') && nn(d, c + '_3')
+        && d.get(c + '_0', 0) + d.get(c + '_1', 0) + d.get(c + '_2', 0) + d.get(c + '_3', 0) <= d.total;
+    }
+    function pgOk(d, postId) {
+      return d.total is int && d.total >= 0
+        && nn(d, 'fam_yes') && nn(d, 'fam_no') && d.get('fam_yes', 0) + d.get('fam_no', 0) <= d.total
+        && catOk(d, 'c_sex') && catOk(d, 'c_violence') && catOk(d, 'c_profanity') && catOk(d, 'c_drugs')
+        && d.total == (resource == null ? 0 : resource.data.get('total', 0))
+                      + (existsAfter(pVote(postId)) ? 1 : 0) - (exists(pVote(postId)) ? 1 : 0);
+    }
+
+    // ---- visitors' own library
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['watchlist', 'watched', 'ratings', 'notify', 'name', 'email', 'updatedAt'])
+        && request.resource.data.get('watchlist', []).size() <= 2000
+        && request.resource.data.get('watched', []).size() <= 2000;
+    }
+
+    // ---- Community Parental Guide (guests may vote only if "guest voting" is on in the admin panel)
+    match /pg_votes/{postId} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.resource.data.keys().hasOnly(['total', 'fam_yes', 'fam_no', 'c_sex_0', 'c_sex_1', 'c_sex_2', 'c_sex_3', 'c_violence_0', 'c_violence_1', 'c_violence_2', 'c_violence_3', 'c_profanity_0', 'c_profanity_1', 'c_profanity_2', 'c_profanity_3', 'c_drugs_0', 'c_drugs_1', 'c_drugs_2', 'c_drugs_3'])
+        && pgOk(request.resource.data, postId);
+      match /votes/{uid} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['uid', 'sex', 'violence', 'profanity', 'drugs', 'family', 'updatedAt'])
+          && request.resource.data.get('uid', uid) == uid
+          && request.resource.data.get('sex', 0) in [0, 1, 2, 3]
+          && request.resource.data.get('violence', 0) in [0, 1, 2, 3]
+          && request.resource.data.get('profanity', 0) in [0, 1, 2, 3]
+          && request.resource.data.get('drugs', 0) in [0, 1, 2, 3]
+          && request.resource.data.get('family', 'yes') in ['yes', 'no'];
+      }
+    }
+
+    // ---- Site content: everyone reads, only the admin writes
+    match /cg_site/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---- Shared comments: real users post, author or admin deletes
+    match /cg_comments/{cid} {
+      allow read: if true;
+      allow create: if realUser()
+        && request.resource.data.keys().hasOnly(['postId', 'uid', 'name', 'text', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.postId is string && request.resource.data.postId.size() <= 120
+        && request.resource.data.name is string && request.resource.data.name.size() <= 40
+        && request.resource.data.text is string && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 500
+        && request.resource.data.createdAt == request.time;
+      allow delete: if isAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+    }
+
+    // ---- Admin-only settings (TMDB key, custom domain)
+    match /cg_admin/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ---- CG Rating: real (non-guest) users only; the average can only move by the caller's own vote
+    match /cg_ratings/{postId} {
+      allow read: if true;
+      allow create, update: if realUser()
+        && request.resource.data.keys().hasOnly(['sum', 'count'])
+        && request.resource.data.count is int && request.resource.data.sum is int
+        && request.resource.data.count >= 0
+        && request.resource.data.sum >= request.resource.data.count
+        && request.resource.data.sum <= request.resource.data.count * 10
+        && ratingDeltaOk(postId);
+      match /votes/{uid} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if realUser() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['value', 'uid', 'updatedAt'])
+          && request.resource.data.value is int
+          && request.resource.data.value >= 1 && request.resource.data.value <= 10;
+      }
+    }
+  }
+}
