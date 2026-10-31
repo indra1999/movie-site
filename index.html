@@ -1635,6 +1635,119 @@
             if (res === 'ok') loadCG(id);
         }
 
+        // --- COMMUNITY PARENTAL GUIDE (only signed-in members can vote; guests can only read) ---
+        const PG_CATS = [
+            ['sex', 'Sex & Nudity', '#f43f5e'],
+            ['violence', 'Violence & Gore', '#f59e0b'],
+            ['profanity', 'Profanity & Language', '#a855f7'],
+            ['drugs', 'Drugs, Alcohol & Smoking', '#3b82f6']
+        ];
+        const PG_LEVELS = ['None', 'Mild', 'Moderate', 'Severe'];
+        const PG_COLORS = ['#10b981', '#facc15', '#fb923c', '#ef4444'];
+        let pgData = {}, pgMine = {}, pgDraft = {}, pgDraftFor = null, pgBusy = false;
+
+        async function loadPG(id) {
+            if (!window.CineSync || !CineSync.getPG) return;
+            try {
+                const [agg, mine] = await Promise.all([CineSync.getPG(id), CineSync.getMyPG(id)]);
+                pgData[id] = agg || {};
+                pgMine[id] = mine || null;
+                if (pgDraftFor !== id) { pgDraft = mine ? Object.assign({}, mine) : {}; pgDraftFor = id; }
+            } catch (e) { return; }
+            renderPGCommunity();
+        }
+        function pgPick(key, val) { pgDraft[key] = val; renderPGCommunity(); }
+        async function pgSubmit() {
+            if (!currentDetailItem || pgBusy) return;
+            const id = currentDetailItem.id;
+            const hasAny = PG_CATS.some(c => pgDraft[c[0]] !== undefined) || pgDraft.family;
+            if (!hasAny) { showToast('Pick at least one answer first'); return; }
+            pgBusy = true; renderPGCommunity();
+            const res = await CineSync.submitPG(id, pgDraft);
+            pgBusy = false;
+            if (res === 'ok') { showToast('Thanks! Your vote was added ✓'); pgDraftFor = null; await loadPG(id); }
+            else if (res === 'needs-login') { showToast('Please sign in with Google to vote'); renderPGCommunity(); }
+            else { showToast('Could not save your vote — check Firestore rules'); renderPGCommunity(); }
+        }
+        async function pgRemove() {
+            if (!currentDetailItem || pgBusy) return;
+            const id = currentDetailItem.id;
+            pgBusy = true; renderPGCommunity();
+            const res = await CineSync.removePG(id);
+            pgBusy = false;
+            pgDraft = {}; pgDraftFor = id;
+            if (res === 'ok') showToast('Your vote was removed');
+            await loadPG(id);
+        }
+        function renderPGCommunity() {
+            const el = document.getElementById('pgCommunity');
+            if (!el || !currentDetailItem) return;
+            const id = currentDetailItem.id;
+            const agg = pgData[id] || {};
+            const n = k => Number(agg[k]) || 0;
+            const total = n('total');
+            const ready = !!(window.CineSync && CineSync.ready);
+            const signed = !!(window.CineSync && CineSync.isSignedIn && CineSync.isSignedIn());
+            const mine = pgMine[id];
+
+            // --- results ---
+            const rows = PG_CATS.map(([key, label, color]) => {
+                const counts = [0, 1, 2, 3].map(i => n(`c_${key}_${i}`));
+                const sum = counts.reduce((a, b) => a + b, 0);
+                let caption = 'No votes yet', bar = '<div class="h-2 rounded-full bg-gray-500/20"></div>';
+                if (sum) {
+                    const top = counts.indexOf(Math.max(...counts));
+                    caption = `${PG_LEVELS[top]} • ${Math.round(counts[top] * 100 / sum)}% of ${sum} ${sum === 1 ? 'vote' : 'votes'}`;
+                    bar = `<div class="flex h-2 rounded-full overflow-hidden bg-gray-500/20">${counts.map((c, i) => c ? `<span style="width:${c * 100 / sum}%;background:${PG_COLORS[i]}"></span>` : '').join('')}</div>`;
+                }
+                return `<div class="p-3 rounded-xl bg-theme-main border border-theme">
+                    <div class="flex items-baseline justify-between gap-2 mb-1.5"><span class="font-bold text-xs" style="color:${color}">${label}</span><span class="text-[11px] text-theme-muted text-right">${caption}</span></div>${bar}</div>`;
+            }).join('');
+            const yes = n('fam_yes'), no = n('fam_no'), fs = yes + no;
+            const famRow = `<div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                <div class="flex items-baseline justify-between gap-2 mb-1.5"><span class="font-bold text-xs text-emerald-500">Okay to watch with family?</span>
+                <span class="text-[11px] text-theme-muted text-right">${fs ? `${Math.round(yes * 100 / fs)}% say Yes • ${fs} ${fs === 1 ? 'vote' : 'votes'}` : 'No votes yet'}</span></div>
+                <div class="flex h-2 rounded-full overflow-hidden bg-gray-500/20">${fs ? `<span style="width:${yes * 100 / fs}%;background:#10b981"></span><span style="width:${no * 100 / fs}%;background:#ef4444"></span>` : ''}</div></div>`;
+
+            // --- voting area ---
+            let vote;
+            if (!ready) {
+                vote = `<p class="text-xs text-theme-muted">Community voting isn't enabled on this site yet.</p>`;
+            } else if (!signed) {
+                vote = `<div class="p-4 rounded-xl bg-theme-main border border-theme text-center">
+                    <p class="text-xs text-theme-muted mb-3">Only signed-in members can vote. This keeps the results free of spam.</p>
+                    <button type="button" onclick="CineSync.signInWithGoogle()" class="px-4 py-2.5 rounded-xl bg-white text-gray-800 font-bold text-xs">Sign in with Google to vote</button></div>`;
+            } else {
+                const chip = (key, val, label, active, color) => `<button type="button" onclick="pgPick('${key}', ${typeof val === 'string' ? `'${val}'` : val})" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition" style="${active ? `background:${color};border-color:${color};color:#111` : 'border-color:rgba(148,163,184,.35)'}">${label}</button>`;
+                const catRows = PG_CATS.map(([key, label, color]) => `
+                    <div><span class="block text-[11px] font-bold mb-1.5" style="color:${color}">${label}</span>
+                    <div class="flex flex-wrap gap-1.5">${PG_LEVELS.map((l, i) => chip(key, i, l, pgDraft[key] === i, PG_COLORS[i])).join('')}</div></div>`).join('');
+                vote = `<div class="p-4 rounded-xl bg-theme-main border border-theme space-y-3.5">
+                    <p class="text-xs font-extrabold text-theme-main">${mine ? 'Your vote (you can change it)' : 'Cast your vote'}</p>
+                    ${catRows}
+                    <div><span class="block text-[11px] font-bold mb-1.5 text-emerald-500">Is it okay to watch with family?</span>
+                    <div class="flex gap-1.5">${chip('family', 'yes', 'Yes', pgDraft.family === 'yes', '#10b981')}${chip('family', 'no', 'No', pgDraft.family === 'no', '#ef4444')}</div></div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" ${pgBusy ? 'disabled' : ''} onclick="pgSubmit()" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold ${pgBusy ? 'opacity-60' : ''}">${pgBusy ? 'Saving…' : (mine ? 'Update my vote' : 'Submit vote')}</button>
+                        ${mine ? `<button type="button" ${pgBusy ? 'disabled' : ''} onclick="pgRemove()" class="px-4 py-2.5 rounded-xl border border-theme text-xs font-bold text-theme-muted">Remove</button>` : ''}
+                    </div></div>`;
+            }
+            el.innerHTML = `
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <h3 class="text-sm font-extrabold text-theme-main flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 accent-text"></i> Community Guide</h3>
+                    <span class="text-[11px] text-theme-muted">${total} ${total === 1 ? 'member' : 'members'} voted</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">${rows}</div>
+                ${famRow}
+                <div class="mt-3">${vote}</div>`;
+            lucide.createIcons();
+        }
+        // re-draw when the person signs in / out
+        window.onCineAuthChange = function () {
+            pgDraftFor = null;
+            if (currentDetailItem && !currentDetailItem.isUpcoming) loadPG(currentDetailItem.id);
+        };
+
         // --- 9. POINT 12 FIXED: INTERACTIVE 1-10 STAR RATING POPUP LOGIC ---
         function openRatingModal(id) {
             const item = allReviews.find(r => r.id === id);
@@ -2122,6 +2235,9 @@
                             <span class="font-bold text-emerald-500 block mb-0.5">Final Family Verdict:</span>
                             <span class="text-theme-main font-medium">${esc(item.verdict)}</span>
                         </div>
+
+                        <!-- COMMUNITY GUIDE: logged-in viewers vote here -->
+                        <div id="pgCommunity" class="mt-5 pt-5 border-t border-theme"></div>
                     </div>
 
                     <div id="adDetailSlot" class="hidden mb-8 overflow-hidden flex justify-center"></div>
@@ -2139,6 +2255,8 @@
             renderKeepBinging();
             updateLayoutToggleButtonsUI();
             startHeroAutoplay();
+            renderPGCommunity();
+            if (!pgData[item.id]) loadPG(item.id);
             injectAd('adDetailSlot', getAdsConfig().detailBanner);
             lucide.createIcons();
         }
