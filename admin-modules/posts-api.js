@@ -117,6 +117,13 @@ function renderAddPostFormTab() {
                     <label class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Backdrop Image URL (Wide) <span class="normal-case text-slate-500">(optional — poster is used if empty)</span></label>
                     <input type="url" id="postBackdrop" placeholder="https://..." class="w-full px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs">
                 </div>
+                <div class="sm:col-span-2">
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <label class="text-[11px] font-bold uppercase text-slate-400">More Slider Images <span class="normal-case text-slate-500">(one URL per line — auto-slides behind the post title)</span></label>
+                        <button type="button" onclick="loadMoreStillsFromTmdb()" class="shrink-0 px-2.5 py-1 rounded-lg bg-white/5 border border-subtle text-[10px] font-bold text-slate-300 hover:bg-white/10">Load from TMDB</button>
+                    </div>
+                    <textarea id="postStills" rows="3" placeholder="https://image.tmdb.org/t/p/w1280/...jpg&#10;https://..." class="w-full px-3.5 py-2.5 rounded-xl bg-[#090a0f] border border-subtle text-xs"></textarea>
+                </div>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -475,8 +482,31 @@ function tmdbIndustry(d) {
     return ({ US: 'Hollywood', GB: 'Hollywood', IN: 'Bollywood', KR: 'Korean', JP: 'Japanese', CN: 'Chinese', TH: 'Thai', TR: 'Turkish', BD: 'Bangla' })[c] || 'Hollywood';
 }
 
+// Best wide still images from a TMDB "images" object (textless ones first, then by votes)
+function pickTmdbStills(images) {
+    const list = ((images && images.backdrops) || []).slice().sort((a, b) =>
+        ((a.iso_639_1 ? 1 : 0) - (b.iso_639_1 ? 1 : 0)) || ((b.vote_average || 0) - (a.vote_average || 0)));
+    return list.slice(0, 8).map(b => `https://image.tmdb.org/t/p/w1280${b.file_path}`);
+}
+
+async function loadMoreStillsFromTmdb() {
+    const box = document.getElementById('postStills');
+    if (!pendingTmdbId) { showAdminToast('No TMDB ID on this post — fetch it via the TMDB tool above first.'); return; }
+    const cat = (document.getElementById('postCategory').value || '').toLowerCase();
+    const type = /series|tv|show|anime/.test(cat) ? 'tv' : 'movie';
+    try {
+        let data;
+        try { data = await tmdbRequest(`/${type}/${pendingTmdbId}/images`, { include_image_language: 'en,null' }); }
+        catch (e) { data = await tmdbRequest(`/${type === 'tv' ? 'movie' : 'tv'}/${pendingTmdbId}/images`, { include_image_language: 'en,null' }); }
+        const main = document.getElementById('postBackdrop').value.trim();
+        const urls = pickTmdbStills(data).filter(u => u !== main);
+        box.value = urls.join('\n');
+        showAdminToast(urls.length ? `Loaded ${urls.length} slider images` : 'No extra images found on TMDB');
+    } catch (e) { showAdminToast(e.message || 'TMDB error'); }
+}
+
 async function fetchTmdbFull(type, id) {
-    const detail = { append_to_response: 'videos,credits', include_video_language: 'en,null,hi,bn' };
+    const detail = { append_to_response: 'videos,credits,images', include_video_language: 'en,null,hi,bn', include_image_language: 'en,null' };
     let d;
     try {
         d = await tmdbRequest(`/${type}/${id}`, detail);
@@ -506,6 +536,7 @@ async function fetchTmdbFull(type, id) {
         rating: Number(d.vote_average || 7).toFixed(1),
         poster: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : '',
         backdrop: d.backdrop_path ? `https://image.tmdb.org/t/p/w1280${d.backdrop_path}` : '',
+        stills: [...new Set([d.backdrop_path ? `https://image.tmdb.org/t/p/w1280${d.backdrop_path}` : '', ...pickTmdbStills(d.images)].filter(Boolean))],
         thumb: d.poster_path ? `https://image.tmdb.org/t/p/w200${d.poster_path}` : '',
         language: ((d.spoken_languages || [])[0] || {}).english_name || (d.original_language || 'en').toUpperCase(),
         duration: fmtRuntime(runtime) || (isTv ? `${d.number_of_seasons || 1} Season` : '1h 55m'),
@@ -588,6 +619,7 @@ function fillFormFromAPI(item) {
     document.getElementById('postRating').value = item.rating || '7.5';
     document.getElementById('postPoster').value = item.poster || '';
     document.getElementById('postBackdrop').value = item.backdrop || item.poster || '';
+    document.getElementById('postStills').value = (item.stills || []).filter(u => u && u !== item.backdrop).join('\n');
     document.getElementById('postLanguage').value = item.language || 'English';
     document.getElementById('postDuration').value = item.duration || '1h 50m';
     document.getElementById('postAgeRating').value = item.ageRating || 'PG-13';
@@ -643,7 +675,7 @@ function saveOrUpdateReviewPost(e) {
         safetyLevel: document.getElementById('postSafety').value,
         backdrop,
         poster,
-        stills: [backdrop, ...((old && Array.isArray(old.stills)) ? old.stills.slice(1) : [])],
+        stills: [...new Set([backdrop, ...document.getElementById('postStills').value.split(/\s+/).map(u => u.trim()).filter(u => /^https?:\/\//i.test(u))])],
         trailerUrl: toEmbedUrl(document.getElementById('postTrailer').value),
         genres: genres.length ? genres : ['Drama'],
         tags: [...new Set([industry, year, category, ...genres])],
@@ -810,6 +842,7 @@ function loadPostForEditing(index) {
     document.getElementById('postRating').value = item.rating || '';
     document.getElementById('postPoster').value = item.poster || '';
     document.getElementById('postBackdrop').value = item.backdrop || '';
+    document.getElementById('postStills').value = (Array.isArray(item.stills) ? item.stills : []).filter(u => u && u !== item.backdrop).join('\n');
     document.getElementById('postLanguage').value = item.language || '';
     document.getElementById('postDuration').value = item.duration || '';
     document.getElementById('postPlatform').value = item.platform || '';
