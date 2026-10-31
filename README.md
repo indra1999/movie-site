@@ -36,6 +36,23 @@ core-data/
          allow read, write: if request.auth != null && request.auth.uid == uid;
        }
 
+       // Community Parental Guide (শুধু লগইন করা ইউজার ভোট দিতে পারে)
+       match /pg_votes/{postId} {
+         allow read: if true;
+         allow create, update: if request.auth != null
+           && request.resource.data.keys().hasOnly(['total', 'fam_yes', 'fam_no', 'c_sex_0', 'c_sex_1', 'c_sex_2', 'c_sex_3', 'c_violence_0', 'c_violence_1', 'c_violence_2', 'c_violence_3', 'c_profanity_0', 'c_profanity_1', 'c_profanity_2', 'c_profanity_3', 'c_drugs_0', 'c_drugs_1', 'c_drugs_2', 'c_drugs_3']);
+         match /votes/{uid} {
+           allow read, delete: if request.auth != null && request.auth.uid == uid;
+           allow create, update: if request.auth != null && request.auth.uid == uid
+             && request.resource.data.keys().hasOnly(['uid','sex','violence','profanity','drugs','family','updatedAt'])
+             && request.resource.data.get('sex', 0) in [0,1,2,3]
+             && request.resource.data.get('violence', 0) in [0,1,2,3]
+             && request.resource.data.get('profanity', 0) in [0,1,2,3]
+             && request.resource.data.get('drugs', 0) in [0,1,2,3]
+             && request.resource.data.get('family', 'yes') in ['yes','no'];
+         }
+       }
+
        // CG Rating (সবার রেটিংয়ের গড়)
        match /cg_ratings/{postId} {
          allow read: if true;
