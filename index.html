@@ -863,6 +863,8 @@
         function renderSpotlight() {
             const box = document.getElementById('spotlightSection');
             if (!box) return;
+            const oldSl = document.getElementById('spotlightSlider');
+            const keepIdx = oldSl ? Math.round(oldSl.scrollLeft / Math.max(1, oldSl.clientWidth)) : 0;
             const unfiltered = allReviews.length > 2 && filteredReviews.length === allReviews.length;
             if (!unfiltered) { box.classList.add('hidden'); box.innerHTML = ''; return; }
             const ranked = [...allReviews].filter(r => scoreNum(r) !== null).sort((a, b) => scoreNum(b) - scoreNum(a));
@@ -878,25 +880,75 @@
                     <p class="mt-1.5 text-xs font-bold text-theme-main truncate">${esc(r.title)}</p>
                     <p class="text-[11px] text-theme-muted">${esc(r.year)} • ${esc(r.category)}</p>
                 </div>`).join('');
-            box.innerHTML = `
-                <article onclick="openDetailView('${esc(top.id)}')" class="relative rounded-3xl overflow-hidden cursor-pointer border border-theme shadow-xl group mb-6">
-                    <img src="${esc(top.backdrop)}" alt="${esc(top.title)}" class="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition duration-700">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent"></div>
-                    <div class="absolute inset-x-0 bottom-0 p-5 sm:p-7 text-white">
-                        <span class="inline-block px-2.5 py-1 rounded-full bg-rose-600 text-[10px] font-extrabold uppercase tracking-widest mb-2">Editor's Pick • Top Rated</span>
-                        <h2 class="text-2xl sm:text-4xl font-black leading-tight">${esc(top.title)} <span class="text-base font-semibold opacity-70">${esc(top.year)}</span></h2>
-                        <p class="text-xs sm:text-sm text-gray-300 mt-1.5 line-clamp-2 max-w-2xl">${esc(top.summary)}</p>
-                        <div class="flex items-center gap-3 mt-3">
-                            <span class="px-5 py-2.5 rounded-xl bg-white text-black text-xs sm:text-sm font-extrabold">Read Review</span>
-                            ${scoreBadge(top)}
-                            <span class="text-xs text-gray-300">${esc((top.genres || []).slice(0, 3).join(' • '))}</span>
+            const slides = ranked.slice(0, 5).map((r, i) => `
+                <article onclick="openDetailView('${esc(r.id)}')" class="shrink-0 w-full snap-center cursor-pointer bg-theme-card flex flex-col" style="min-width:100%;">
+                    <div class="relative w-full overflow-hidden bg-black" style="aspect-ratio:16/10;">
+                        <img src="${esc(r.backdrop || r.poster)}" alt="${esc(r.title)}" ${i === 0 ? '' : 'loading="lazy"'} class="absolute inset-0 w-full h-full object-cover">
+                        <div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
+                        <span class="absolute top-3 left-3 max-w-[85%] px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] font-extrabold uppercase tracking-widest shadow-lg">${i === 0 ? "Editor's Pick • Top Rated" : `Top Rated • #${i + 1}`}</span>
+                    </div>
+                    <div class="p-4 sm:p-5 flex flex-col gap-2 min-w-0">
+                        <h2 class="text-xl sm:text-3xl font-black leading-tight text-theme-main break-words">${esc(r.title)} <span class="text-sm font-semibold text-theme-muted">${esc(r.year)}</span></h2>
+                        <p class="text-xs sm:text-sm text-theme-muted line-clamp-2">${esc(r.summary)}</p>
+                        <div class="flex items-center gap-3 mt-1 flex-wrap">
+                            ${scoreBadge(r)}
+                            <span class="text-xs text-theme-muted min-w-0 flex-1 truncate">${esc((r.genres || []).slice(0, 3).join(' • '))}</span>
+                            <span class="shrink-0 px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-extrabold whitespace-nowrap">Read Review</span>
                         </div>
                     </div>
-                </article>
+                </article>`).join('');
+            const dots = ranked.slice(0, 5).map((r, i) => `<button type="button" aria-label="Slide ${i + 1}" onclick="spotlightGo(${i})" class="spot-dot h-1.5 rounded-full transition-all ${i === 0 ? 'w-5 bg-rose-600' : 'w-1.5 bg-gray-500/60'}"></button>`).join('');
+            box.innerHTML = `
+                <div class="mb-6">
+                    <div id="spotlightSlider" class="flex overflow-x-auto no-scrollbar snap-x snap-mandatory rounded-3xl border border-theme shadow-xl" style="scroll-behavior:smooth;-webkit-overflow-scrolling:touch;">${slides}</div>
+                    <div id="spotlightDots" class="flex items-center justify-center gap-1.5 mt-3">${dots}</div>
+                </div>
                 <div class="flex items-center justify-between mb-3"><h2 class="text-lg font-extrabold text-theme-main">Top Rated</h2><span class="text-[11px] text-theme-muted">Ranked by score</span></div>
                 <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">${rail}</div>
                 <div class="flex items-center justify-between mt-6 mb-1"><h2 class="text-lg font-extrabold text-theme-main">Latest Reviews</h2></div>`;
             box.classList.remove('hidden');
+            if (keepIdx > 0) {
+                const sl = document.getElementById('spotlightSlider');
+                sl.style.scrollBehavior = 'auto';
+                sl.scrollLeft = keepIdx * sl.clientWidth;
+                sl.style.scrollBehavior = 'smooth';
+                document.querySelectorAll('#spotlightDots .spot-dot').forEach((d, i) => {
+                    d.className = 'spot-dot h-1.5 rounded-full transition-all ' + (i === keepIdx ? 'w-5 bg-rose-600' : 'w-1.5 bg-gray-500/60');
+                });
+            }
+            startSpotlightAutoplay();
+        }
+
+        // Auto-sliding hero (4–5 top posts): advances every 4s, pauses while the user touches/hovers
+        let spotlightTimer = null, spotlightPausedUntil = 0;
+        function spotlightGo(i) {
+            const sl = document.getElementById('spotlightSlider');
+            if (!sl) return;
+            spotlightPausedUntil = Date.now() + 6000;
+            sl.scrollTo({ left: i * sl.clientWidth, behavior: 'smooth' });
+        }
+        function startSpotlightAutoplay() {
+            clearInterval(spotlightTimer);
+            const sl = document.getElementById('spotlightSlider');
+            if (!sl) return;
+            const count = sl.children.length;
+            const paintDots = () => {
+                const idx = Math.round(sl.scrollLeft / Math.max(1, sl.clientWidth));
+                document.querySelectorAll('#spotlightDots .spot-dot').forEach((d, i) => {
+                    d.className = 'spot-dot h-1.5 rounded-full transition-all ' + (i === idx ? 'w-5 bg-rose-600' : 'w-1.5 bg-gray-500/60');
+                });
+            };
+            sl.addEventListener('scroll', paintDots, { passive: true });
+            const pause = () => { spotlightPausedUntil = Date.now() + 6000; };
+            ['touchstart', 'pointerdown', 'wheel', 'mouseenter'].forEach(ev => sl.addEventListener(ev, pause, { passive: true }));
+            if (count < 2 || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+            spotlightTimer = setInterval(() => {
+                const el = document.getElementById('spotlightSlider');
+                if (!el) { clearInterval(spotlightTimer); return; }
+                if (document.hidden || el.offsetParent === null || Date.now() < spotlightPausedUntil) return;
+                const idx = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+                el.scrollTo({ left: ((idx + 1) % count) * el.clientWidth, behavior: 'smooth' });
+            }, 4000);
         }
         const _renderAllGrids = renderAllGrids;
         renderAllGrids = function () { _renderAllGrids(); renderSpotlight(); lucide.createIcons(); };
