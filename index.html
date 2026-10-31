@@ -90,7 +90,8 @@
         .hero-seg { flex: 1 1 0; height: 3px; border-radius: 2px; background: rgba(255,255,255,.35); overflow: hidden; min-width: 6px; }
         .hero-seg > i { display: block; height: 100%; width: 0; background: #fff; }
         .hero-seg.done > i { width: 100%; }
-        .hero-seg.active > i { animation: heroFill 4000ms linear forwards; }
+        .hero-seg.active > i { animation: heroFill var(--hero-ms, 4000ms) linear forwards; }
+        .hero-static .hero-seg.active > i { animation: none; width: 100%; }
         .hero-paused .hero-seg.active > i { animation-play-state: paused; }
         @keyframes heroFill { to { width: 100%; } }
 
@@ -495,7 +496,7 @@
             </div>
 
             <!-- CG Rating note -->
-            <div class="flex items-center justify-center gap-2 text-[11px] text-gray-400 mb-1 flex-wrap text-center">
+            <div id="cgModalNote" class="flex items-center justify-center gap-2 text-[11px] text-gray-400 mb-1 flex-wrap text-center">
                 <span class="px-1.5 py-0.5 rounded bg-[#e0533c] text-white font-black text-[10px]">CG</span>
                 <span>Your rating counts toward the <b class="text-gray-200">CG Rating</b></span>
                 <span id="cgModalNow" class="text-gray-300 font-semibold"></span>
@@ -768,6 +769,34 @@
             const all = [...safeParse('cineguide_custom_categories', []), ...(siteData.categories || [])];
             return [...new Set(all)];
         }
+        // --- SITE FEATURES (admin panel -> "Site Features"): on/off + numbers ---
+        const FEATURE_DEFAULTS = {
+            spotlight:      { enabled: true, count: 5, autoplay: true, seconds: 4 },
+            heroSlider:     { autoplay: true, seconds: 4 },
+            communityGuide: { enabled: true, guestVoting: false },
+            cgRating:       { enabled: true },
+            keepBinging:    { enabled: true, count: 6 }
+        };
+        function normalizeFeatures(raw) {
+            const r = (raw && typeof raw === 'object') ? raw : {};
+            const num = (v, min, max, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : d; };
+            const bool = (v, d) => typeof v === 'boolean' ? v : d;
+            const D = FEATURE_DEFAULTS, s = r.spotlight || {}, h = r.heroSlider || {}, c = r.communityGuide || {}, g = r.cgRating || {}, k = r.keepBinging || {};
+            return {
+                spotlight:      { enabled: bool(s.enabled, D.spotlight.enabled), count: num(s.count, 1, 20, D.spotlight.count), autoplay: bool(s.autoplay, D.spotlight.autoplay), seconds: num(s.seconds, 2, 15, D.spotlight.seconds) },
+                heroSlider:     { autoplay: bool(h.autoplay, D.heroSlider.autoplay), seconds: num(h.seconds, 2, 15, D.heroSlider.seconds) },
+                communityGuide: { enabled: bool(c.enabled, D.communityGuide.enabled), guestVoting: bool(c.guestVoting, D.communityGuide.guestVoting) },
+                cgRating:       { enabled: bool(g.enabled, D.cgRating.enabled) },
+                keepBinging:    { enabled: bool(k.enabled, D.keepBinging.enabled), count: num(k.count, 1, 12, D.keepBinging.count) }
+            };
+        }
+        // admin's browser: its own saved settings (instant preview); every visitor: site-data.json
+        function getFeatures() {
+            let saved = null;
+            try { saved = JSON.parse(localStorage.getItem('cineguide_features') || 'null'); } catch (e) {}
+            return normalizeFeatures(saved || siteData.features);
+        }
+
         function getAdsConfig() {
             const local = safeParse('cineguide_ads_config', null);
             const hasLocal = local && (local.topBanner || local.detailBanner || local.footerBanner);
@@ -871,6 +900,8 @@
         function renderSpotlight() {
             const box = document.getElementById('spotlightSection');
             if (!box) return;
+            const SF = getFeatures().spotlight;
+            if (!SF.enabled) { box.classList.add('hidden'); box.innerHTML = ''; return; }
             const oldSl = document.getElementById('spotlightSlider');
             const keepIdx = oldSl ? Math.round(oldSl.scrollLeft / Math.max(1, oldSl.clientWidth)) : 0;
             const unfiltered = allReviews.length > 2 && filteredReviews.length === allReviews.length;
@@ -888,7 +919,7 @@
                     <p class="mt-1.5 text-xs font-bold text-theme-main truncate">${esc(r.title)}</p>
                     <p class="text-[11px] text-theme-muted">${esc(r.year)} • ${esc(r.category)}</p>
                 </div>`).join('');
-            const slides = ranked.slice(0, 5).map((r, i) => `
+            const slides = ranked.slice(0, SF.count).map((r, i) => `
                 <article onclick="openDetailView('${esc(r.id)}')" class="shrink-0 w-full snap-center cursor-pointer bg-theme-card flex flex-col" style="min-width:100%;">
                     <div class="relative w-full overflow-hidden bg-black" style="aspect-ratio:16/10;">
                         <img src="${esc(r.backdrop || r.poster)}" alt="${esc(r.title)}" ${i === 0 ? '' : 'loading="lazy"'} class="absolute inset-0 w-full h-full object-cover">
@@ -905,7 +936,7 @@
                         </div>
                     </div>
                 </article>`).join('');
-            const dots = ranked.slice(0, 5).map((r, i) => `<button type="button" aria-label="Slide ${i + 1}" onclick="spotlightGo(${i})" class="spot-dot h-1.5 rounded-full transition-all ${i === 0 ? 'w-5 bg-rose-600' : 'w-1.5 bg-gray-500/60'}"></button>`).join('');
+            const dots = ranked.slice(0, SF.count).map((r, i) => `<button type="button" aria-label="Slide ${i + 1}" onclick="spotlightGo(${i})" class="spot-dot h-1.5 rounded-full transition-all ${i === 0 ? 'w-5 bg-rose-600' : 'w-1.5 bg-gray-500/60'}"></button>`).join('');
             box.innerHTML = `
                 <div class="mb-6">
                     <div id="spotlightSlider" class="flex overflow-x-auto no-scrollbar snap-x snap-mandatory rounded-3xl border border-theme shadow-xl" style="scroll-behavior:smooth;-webkit-overflow-scrolling:touch;">${slides}</div>
@@ -949,14 +980,14 @@
             sl.addEventListener('scroll', paintDots, { passive: true });
             const pause = () => { spotlightPausedUntil = Date.now() + 6000; };
             ['touchstart', 'pointerdown', 'wheel', 'mouseenter'].forEach(ev => sl.addEventListener(ev, pause, { passive: true }));
-            if (count < 2 || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+            if (count < 2 || !getFeatures().spotlight.autoplay || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
             spotlightTimer = setInterval(() => {
                 const el = document.getElementById('spotlightSlider');
                 if (!el) { clearInterval(spotlightTimer); return; }
                 if (document.hidden || el.offsetParent === null || Date.now() < spotlightPausedUntil) return;
                 const idx = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
                 el.scrollTo({ left: ((idx + 1) % count) * el.clientWidth, behavior: 'smooth' });
-            }, 4000);
+            }, getFeatures().spotlight.seconds * 1000);
         }
         const _renderAllGrids = renderAllGrids;
         renderAllGrids = function () { _renderAllGrids(); renderSpotlight(); lucide.createIcons(); };
@@ -1312,7 +1343,7 @@
         function renderKeepBinging() {
             const grid = document.getElementById('keepBingingGrid');
             if (!grid || !currentDetailItem || currentDetailItem.isUpcoming) return;
-            const related = allReviews.filter(r => r.id !== currentDetailItem.id).slice(0, 6);
+            const related = allReviews.filter(r => r.id !== currentDetailItem.id).slice(0, getFeatures().keepBinging.count);
             if (!related.length) { grid.innerHTML = ''; return; }
             if (layoutOf('binging') === 'grid2') {
                 grid.className = "grid grid-cols-2 gap-4";
@@ -1624,7 +1655,7 @@
             paintCG(id);
         }
         async function submitToCG(id, val) {
-            if (!window.CineSync || !CineSync.submitCG) return;
+            if (!getFeatures().cgRating.enabled || !window.CineSync || !CineSync.submitCG) return;
             const res = await CineSync.submitCG(id, val);
             if (res === 'ok') { showToast('Added to CG Rating ✓'); loadCG(id); }
             else if (res === 'needs-login') showToast('Sign in with Google to add your rating to CG Rating');
@@ -1647,7 +1678,7 @@
         let pgData = {}, pgMine = {}, pgDraft = {}, pgDraftFor = null, pgBusy = false;
 
         async function loadPG(id) {
-            if (!window.CineSync || !CineSync.getPG) return;
+            if (!getFeatures().communityGuide.enabled || !window.CineSync || !CineSync.getPG) return;
             try {
                 const [agg, mine] = await Promise.all([CineSync.getPG(id), CineSync.getMyPG(id)]);
                 pgData[id] = agg || {};
@@ -1663,10 +1694,11 @@
             const hasAny = PG_CATS.some(c => pgDraft[c[0]] !== undefined) || pgDraft.family;
             if (!hasAny) { showToast('Pick at least one answer first'); return; }
             pgBusy = true; renderPGCommunity();
-            const res = await CineSync.submitPG(id, pgDraft);
+            const res = await CineSync.submitPG(id, pgDraft, getFeatures().communityGuide.guestVoting);
             pgBusy = false;
             if (res === 'ok') { showToast('Thanks! Your vote was added ✓'); pgDraftFor = null; await loadPG(id); }
             else if (res === 'needs-login') { showToast('Please sign in with Google to vote'); renderPGCommunity(); }
+            else if (res === 'guest-unavailable') { showToast('Guest voting is not available right now — please sign in with Google'); renderPGCommunity(); }
             else { showToast('Could not save your vote — check Firestore rules'); renderPGCommunity(); }
         }
         async function pgRemove() {
@@ -1682,12 +1714,16 @@
         function renderPGCommunity() {
             const el = document.getElementById('pgCommunity');
             if (!el || !currentDetailItem) return;
+            const PF = getFeatures().communityGuide;
+            if (!PF.enabled) { el.innerHTML = ''; el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
             const id = currentDetailItem.id;
             const agg = pgData[id] || {};
             const n = k => Number(agg[k]) || 0;
             const total = n('total');
             const ready = !!(window.CineSync && CineSync.ready);
             const signed = !!(window.CineSync && CineSync.isSignedIn && CineSync.isSignedIn());
+            const canVote = signed || PF.guestVoting;
             const mine = pgMine[id];
 
             // --- results ---
@@ -1713,7 +1749,7 @@
             let vote;
             if (!ready) {
                 vote = `<p class="text-xs text-theme-muted">Community voting isn't enabled on this site yet.</p>`;
-            } else if (!signed) {
+            } else if (!canVote) {
                 vote = `<div class="p-4 rounded-xl bg-theme-main border border-theme text-center">
                     <p class="text-xs text-theme-muted mb-3">Only signed-in members can vote. This keeps the results free of spam.</p>
                     <button type="button" onclick="CineSync.signInWithGoogle()" class="px-4 py-2.5 rounded-xl bg-white text-gray-800 font-bold text-xs">Sign in with Google to vote</button></div>`;
@@ -1724,6 +1760,7 @@
                     <div class="flex flex-wrap gap-1.5">${PG_LEVELS.map((l, i) => chip(key, i, l, pgDraft[key] === i, PG_COLORS[i])).join('')}</div></div>`).join('');
                 vote = `<div class="p-4 rounded-xl bg-theme-main border border-theme space-y-3.5">
                     <p class="text-xs font-extrabold text-theme-main">${mine ? 'Your vote (you can change it)' : 'Cast your vote'}</p>
+                    ${signed ? '' : `<p class="text-[11px] text-theme-muted -mt-2">You're voting as a guest. <button type="button" onclick="CineSync.signInWithGoogle()" class="underline font-bold accent-text">Sign in with Google</button> to keep your votes on your account.</p>`}
                     ${catRows}
                     <div><span class="block text-[11px] font-bold mb-1.5 text-emerald-500">Is it okay to watch with family?</span>
                     <div class="flex gap-1.5">${chip('family', 'yes', 'Yes', pgDraft.family === 'yes', '#10b981')}${chip('family', 'no', 'No', pgDraft.family === 'no', '#ef4444')}</div></div>
@@ -1757,8 +1794,9 @@
 
             document.getElementById('ratingModalTitle').innerHTML = `${esc(item.title)} <span class="font-normal text-gray-400">${esc(item.year)}</span>`;
             renderTenStarsUI();
-            paintCG(id);
-            loadCG(id);
+            const cgOn = getFeatures().cgRating.enabled;
+            document.getElementById('cgModalNote').style.display = cgOn ? '' : 'none';
+            if (cgOn) { paintCG(id); loadCG(id); }
 
             const modal = document.getElementById('ratingModal');
             modal.classList.remove('hidden');
@@ -1898,7 +1936,7 @@
         }
 
         // ---- Detail hero slider: auto-slides every 4s, story-style progress bar, pause/play, swipe ----
-        const HERO_MS = 4000;
+        function heroMs() { return getFeatures().heroSlider.seconds * 1000; }
         let heroTimer = null, heroPaused = false, heroTickStart = 0, heroTouchX = null;
         function heroStillsList() {
             const it = currentDetailItem;
@@ -1915,14 +1953,14 @@
         }
         function heroSchedule(ms) {
             clearTimeout(heroTimer);
-            if (heroPaused || heroStillsList().length < 2) return;
+            if (heroPaused || !getFeatures().heroSlider.autoplay || heroStillsList().length < 2) return;
             heroTickStart = Date.now();
             heroTimer = setTimeout(heroTick, ms);
         }
         function heroTick() {
             const wrap = document.getElementById('detailHeroWrap');
             if (!wrap) return;
-            if (document.hidden || wrap.offsetParent === null) { heroSchedule(HERO_MS); return; }
+            if (document.hidden || wrap.offsetParent === null) { heroSchedule(heroMs()); return; }
             changeHeroStill(1);
         }
         function changeHeroStill(dir) {
@@ -1930,7 +1968,7 @@
             const n = heroStillsList().length;
             currentStillIndex = (currentStillIndex + dir + n) % n;
             heroPaint();
-            heroSchedule(HERO_MS);
+            heroSchedule(heroMs());
         }
         function heroTogglePause() {
             const wrap = document.getElementById('detailHeroWrap');
@@ -1941,7 +1979,7 @@
                 heroElapsedMs = Date.now() - heroTickStart;
             } else {
                 heroPaused = false;
-                heroSchedule(Math.max(400, HERO_MS - (heroElapsedMs || 0)));
+                heroSchedule(Math.max(400, heroMs() - (heroElapsedMs || 0)));
             }
             wrap.classList.toggle('hero-paused', heroPaused);
             heroUpdatePauseIcon();
@@ -1970,7 +2008,7 @@
             heroUpdatePauseIcon();
             heroPaint();
             heroElapsedMs = 0;
-            heroSchedule(HERO_MS);
+            heroSchedule(heroMs());
         }
 
         function renderDetailContent() {
@@ -1996,7 +2034,7 @@
             const container = document.getElementById('detailContent');
             container.innerHTML = `
                 <!-- TOP HERO IMAGE SLIDER -->
-                <div id="detailHeroWrap" class="relative w-full h-[320px] sm:h-[420px] bg-black overflow-hidden" ontouchstart="heroTouchStart(event)" ontouchend="heroTouchEnd(event)">
+                <div id="detailHeroWrap" class="relative w-full h-[320px] sm:h-[420px] bg-black overflow-hidden ${getFeatures().heroSlider.autoplay ? '' : 'hero-static'}" style="--hero-ms:${heroMs()}ms" ontouchstart="heroTouchStart(event)" ontouchend="heroTouchEnd(event)">
                     ${stills.map((u, i) => `<img src="${esc(u)}" alt="" ${i === 0 ? '' : 'loading="lazy"'} class="hero-img absolute inset-0 w-full h-full object-cover transition-opacity duration-700" style="opacity:${i === currentStillIndex ? '0.85' : '0'}">`).join('')}
                     <div class="absolute inset-0 bg-gradient-to-t from-[#090a0f] via-[#090a0f]/40 to-transparent pointer-events-none"></div>
 
@@ -2004,7 +2042,7 @@
                     <div class="absolute top-4 left-4 right-4 flex items-center gap-2 pointer-events-none">
                         <div class="pointer-events-auto px-3 py-2 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-2.5" style="max-width:100%;">
                             <div class="flex items-center gap-1" style="width:min(46vw,200px);">${stills.map(() => '<span class="hero-seg"><i></i></span>').join('')}</div>
-                            <button id="heroPauseBtn" type="button" onclick="heroTogglePause()" class="shrink-0 w-6 h-6 flex items-center justify-center text-white"></button>
+                            ${getFeatures().heroSlider.autoplay ? '<button id="heroPauseBtn" type="button" onclick="heroTogglePause()" class="shrink-0 w-6 h-6 flex items-center justify-center text-white"></button>' : ''}
                         </div>
                     </div>
                     <button type="button" aria-label="Previous image" onclick="changeHeroStill(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-black transition">
@@ -2085,6 +2123,7 @@
                         </div>
 
 
+                        ${getFeatures().cgRating.enabled ? `
                         <!-- CG RATING (community rating collected from every user's stars) -->
                         <div class="rounded-2xl bg-theme-card border border-theme p-3 sm:p-3.5 flex items-center gap-3">
                             <span class="shrink-0 w-10 h-10 rounded-xl bg-[#e0533c] text-white font-black text-sm flex items-center justify-center">CG</span>
@@ -2100,6 +2139,7 @@
                                 ${myRating ? `Your ${myRating}★ · Edit` : 'Rate'}
                             </button>
                         </div>
+                        ` : ''}
 
                         <div class="grid grid-cols-2 gap-2.5">
                             <button onclick="toggleWatchlist('${esc(item.id)}'); renderDetailContent();" class="py-3 rounded-2xl bg-theme-card border ${isBookmarked ? 'accent-border accent-text font-bold' : 'border-theme text-theme-main'} font-semibold text-xs sm:text-sm flex items-center justify-center gap-2">
@@ -2243,6 +2283,7 @@
                     <div id="adDetailSlot" class="hidden mb-8 overflow-hidden flex justify-center"></div>
 
                     <!-- KEEP BINGING SECTION (same cards + Single/2-Col switch as the Home page) -->
+                    ${getFeatures().keepBinging.enabled ? `
                     <div>
                         <div class="flex items-center justify-between gap-3 mb-3">
                             <h2 class="text-lg font-extrabold text-theme-main">Keep Binging</h2>
@@ -2250,6 +2291,7 @@
                         </div>
                         <div id="keepBingingGrid" class="grid grid-cols-1 gap-5"></div>
                     </div>
+                    ` : ''}
                 </div>
             `;
             renderKeepBinging();

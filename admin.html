@@ -81,6 +81,9 @@
                     <button onclick="switchAdminTab('users')" id="navBtn-users" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
                         <i data-lucide="users" class="w-4 h-4"></i> Users & Comments
                     </button>
+                    <button onclick="switchAdminTab('features')" id="navBtn-features" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
+                        <i data-lucide="toggle-right" class="w-4 h-4"></i> Site Features
+                    </button>
                     <button onclick="switchAdminTab('settings')" id="navBtn-settings" class="admin-nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 whitespace-nowrap">
                         <i data-lucide="settings" class="w-4 h-4"></i> SEO, Footer & Security
                     </button>
@@ -102,6 +105,7 @@
             <section id="tabSection-upcoming" class="admin-tab-section hidden"></section>
             <section id="tabSection-categories" class="admin-tab-section hidden"></section>
             <section id="tabSection-users" class="admin-tab-section hidden"></section>
+            <section id="tabSection-features" class="admin-tab-section hidden"></section>
             <section id="tabSection-settings" class="admin-tab-section hidden"></section>
         </main>
     </div>
@@ -199,6 +203,7 @@
             if (typeof initCategoriesAdsModule === 'function') initCategoriesAdsModule();
             if (typeof initUsersCommentsModule === 'function') initUsersCommentsModule();
             if (typeof initSettingsSecurityModule === 'function') initSettingsSecurityModule();
+            if (typeof initFeaturesModule === 'function') initFeaturesModule();
             lucide.createIcons();
         }
 
@@ -222,6 +227,7 @@
     <script src="admin-modules/categories-ads.js"></script>
     <script src="admin-modules/users-comments.js"></script>
     <script src="admin-modules/settings-security.js"></script>
+    <script src="admin-modules/features.js"></script>
     <script src="admin-modules/data-safety.js"></script>
 </body>
 </html>
