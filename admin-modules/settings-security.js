@@ -130,6 +130,7 @@ function exportSiteData() {
         categories: safeParse('cineguide_custom_categories', []),
         ads: safeParse('cineguide_ads_config', {}),
         deleted: safeParse('cineguide_deleted_ids', []),
+        features: (typeof getSavedFeatures === 'function') ? getSavedFeatures() : undefined,
         footer: {
             tagline: localStorage.getItem('cineguide_footer_tagline') || '',
             copyright: localStorage.getItem('cineguide_footer_copyright') || '',
@@ -167,6 +168,7 @@ function importSiteData(ev) {
                 safeSave('cineguide_custom_categories', [...new Set([...cats, ...data.categories])]);
             }
             if (data.ads && typeof data.ads === 'object') safeSave('cineguide_ads_config', data.ads);
+            if (data.features && typeof data.features === 'object') safeSave('cineguide_features', data.features);
             if (data.footer) {
                 ['tagline', 'copyright', 'credit'].forEach(k => { if (data.footer[k]) localStorage.setItem('cineguide_footer_' + k, data.footer[k]); });
             }

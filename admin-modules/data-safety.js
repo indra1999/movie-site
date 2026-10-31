@@ -16,7 +16,7 @@
 (function () {
     'use strict';
 
-    const TRACK = ['cineguide_custom_reviews', 'cineguide_upcoming', 'cineguide_custom_categories', 'cineguide_ads_config'];
+    const TRACK = ['cineguide_custom_reviews', 'cineguide_upcoming', 'cineguide_custom_categories', 'cineguide_ads_config', 'cineguide_features'];
     const STATE_KEY = 'cineguide_backup_state';     // { dirty, lastBackupAt }
     const EMPTY_FLAG = 'cineguide_user_emptied';    // set when the admin intentionally removed everything
     const DB_NAME = 'cineguide_safety';
@@ -46,6 +46,7 @@
             upcoming: readJSON('cineguide_upcoming', []),
             categories: readJSON('cineguide_custom_categories', []),
             ads: readJSON('cineguide_ads_config', {}),
+            features: readJSON('cineguide_features', null),
             deleted: readJSON('cineguide_deleted_ids', []),
             // visitor comments + API key are kept in the private backup/mirror only
             // (never in the public site-data.json)
@@ -180,6 +181,9 @@
             }
             if (data.ads && typeof data.ads === 'object' && (mode === 'replace' || !Object.keys(readJSON('cineguide_ads_config', {})).length)) {
                 save('cineguide_ads_config', data.ads);
+            }
+            if (data.features && typeof data.features === 'object' && (mode === 'replace' || !localStorage.getItem('cineguide_features'))) {
+                save('cineguide_features', data.features);
             }
             if (data.footer) {
                 ['tagline', 'copyright', 'credit'].forEach(k => {
