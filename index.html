@@ -502,6 +502,12 @@
                 <span id="cgModalNow" class="text-gray-300 font-semibold"></span>
             </div>
 
+            <!-- Guests: sign-in prompt (only members can rate) -->
+            <div id="cgLoginHint" style="display:none" class="flex items-center justify-center gap-2 text-[11px] text-gray-300 mb-1 flex-wrap text-center">
+                <span class="px-1.5 py-0.5 rounded bg-[#e0533c] text-white font-black text-[10px]">CG</span>
+                <span>Sign in with Google to add your rating to the <b class="text-gray-200">CG Rating</b></span>
+            </div>
+
             <!-- Action Buttons Row -->
             <div class="flex items-center gap-2 sm:gap-3 mt-4">
                 <button id="saveRatingBtn" onclick="saveUserStarRating()" class="flex-1 py-3.5 rounded-2xl bg-[#e0533c] hover:bg-[#d0432c] text-white font-extrabold text-sm transition shadow-lg">
@@ -885,8 +891,16 @@
             let saved = {};
             try { saved = JSON.parse(localStorage.getItem('cineguide_layout_modes') || '{}') || {}; } catch (e) {}
             const legacy = safeText('cineguide_layout_mode') || 'single';
+            // one-time: Latest Reviews (home) now opens in the dual grid by default; the person can still switch and it is remembered
+            try {
+                if (!localStorage.getItem('cineguide_home_grid2_v1')) {
+                    saved.home = 'grid2';
+                    localStorage.setItem('cineguide_home_grid2_v1', '1');
+                    localStorage.setItem('cineguide_layout_modes', JSON.stringify(saved));
+                }
+            } catch (e) {}
             const m = {};
-            LAYOUT_SECTIONS.forEach(k => { m[k] = (saved[k] === 'grid2' || saved[k] === 'single') ? saved[k] : legacy; });
+            LAYOUT_SECTIONS.forEach(k => { m[k] = (saved[k] === 'grid2' || saved[k] === 'single') ? saved[k] : (k === 'home' ? 'grid2' : legacy); });
             return m;
         })();
         function layoutOf(section) { return layoutModes[section] || 'single'; }
@@ -1180,11 +1194,34 @@
             });
             if (changed) safeSave('cineguide_alerted', alerted);
         }
-        function isUpcomingActive(u) {
-            const t = Date.parse(u.releaseDate);
-            if (isNaN(t)) return true;
-            return t >= Date.now() - 7 * 24 * 60 * 60 * 1000; // hide 7 days after release
+        // --- UPCOMING CALENDAR helpers: a release date is a local calendar day ---
+        const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        function todayStart() { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+        // exact = a real day ("November 14, 2026"); month only ("December 2026") sits at the end of its month; unreadable ("TBA") has no date
+        function upInfo(u) {
+            const str = String(u.releaseDate || '').trim();
+            if (!str) return { date: null, exact: false };
+            let d, m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (m) { d = new Date(+m[1], +m[2] - 1, +m[3]); return isNaN(d) ? { date: null, exact: false } : { date: d, exact: true }; }
+            const t = Date.parse(str);
+            if (isNaN(t)) return { date: null, exact: false };
+            d = new Date(t);
+            const exact = /\b\d{1,2}(st|nd|rd|th)?,?\s+\d{4}/i.test(str) || /\b\d{1,2}(st|nd|rd|th)?\s+[A-Za-z]{3,}/.test(str) || /\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}/.test(str);
+            return exact ? { date: new Date(d.getFullYear(), d.getMonth(), d.getDate()), exact: true } : { date: new Date(d.getFullYear(), d.getMonth(), 1), exact: false };
         }
+        function isUpcomingActive(u) {
+            const i = upInfo(u);
+            if (!i.date) return true;   // "TBA" stays visible
+            const last = i.exact ? i.date : new Date(i.date.getFullYear(), i.date.getMonth() + 1, 0);
+            return last >= todayStart();   // today's titles stay until the day ends, then they disappear
+        }
+        function upSortKey(u) {
+            const i = upInfo(u);
+            if (!i.date) return Infinity;
+            return i.exact ? i.date.getTime() : new Date(i.date.getFullYear(), i.date.getMonth() + 1, 0).getTime() + 1;
+        }
+        function upSort(a, b) { return (upSortKey(a) - upSortKey(b)) || String(a.title).localeCompare(String(b.title)); }
 
         // Point 13 Fixed: Hide Category Bar on Scroll Down, Show on Scroll Up
         function initScrollHideHeader() {
@@ -1461,9 +1498,9 @@
 
                     <span class="absolute bottom-3 right-3">${scoreBadge(item)}</span>
                     <!-- Title Overlay -->
-                    <div class="absolute inset-x-4 bottom-3">
+                    <div class="absolute left-4 right-[72px] bottom-3">
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-gray-300 block mb-0.5">${esc(item.industry)}</span>
-                        <h3 class="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-md uppercase leading-none">
+                        <h3 class="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-md uppercase leading-none break-words">
                             ${esc(item.title)} <span class="text-base font-semibold opacity-75">${esc(item.year)}</span>
                         </h3>
                     </div>
@@ -1529,15 +1566,72 @@
             const fullUp = document.getElementById('upcomingFullGrid');
 
             const classFor = g2 => g2 ? "grid grid-cols-2 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-4";
-            const visible = upcomingList.filter(isUpcomingActive);
+            const visible = upcomingList.filter(isUpcomingActive).sort(upSort);
             const htmlFor = g2 => visible.length
                 ? visible.map(u => createUpcomingCardHTML(u, g2)).join('')
                 : `<p class="text-xs text-theme-muted col-span-full">No upcoming releases right now. Check back soon!</p>`;
 
             if (homeUp) { const g2 = layoutOf('homeUpcoming') === 'grid2'; homeUp.className = classFor(g2); homeUp.innerHTML = htmlFor(g2); }
-            if (fullUp) { const g2 = layoutOf('upcoming') === 'grid2'; fullUp.className = classFor(g2); fullUp.innerHTML = htmlFor(g2); }
+            if (fullUp) renderUpcomingCalendar(fullUp, visible, layoutOf('upcoming') === 'grid2');
             lucide.createIcons();
         }
+
+        // Upcoming page = month-by-month calendar: 1st on top, then the 2nd below it, and so on
+        function renderUpcomingCalendar(el, list, g2) {
+            el.className = 'block';
+            if (!list.length) { el.innerHTML = '<p class="text-xs text-theme-muted">No upcoming releases right now. Check back soon!</p>'; return; }
+            const today = todayStart(), tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+            const months = [], tba = [];
+            list.forEach(u => {
+                const i = upInfo(u);
+                if (!i.date) { tba.push(u); return; }
+                const mk = i.date.getFullYear() * 12 + i.date.getMonth();
+                let m = months.find(x => x.mk === mk);
+                if (!m) { m = { mk, y: i.date.getFullYear(), mo: i.date.getMonth(), days: [], soon: [] }; months.push(m); }
+                if (!i.exact) { m.soon.push(u); return; }
+                const t = i.date.getTime();
+                let d = m.days.find(x => x.t === t);
+                if (!d) { d = { t, date: i.date, items: [] }; m.days.push(d); }
+                d.items.push(u);
+            });
+            const gridCls = g2 ? 'grid grid-cols-2 sm:grid-cols-3 gap-4' : 'grid grid-cols-1 sm:grid-cols-2 gap-4';
+            const cards = items => `<div class="${gridCls}">${items.map(u => createUpcomingCardHTML(u, g2)).join('')}</div>`;
+            const plural = n => `${n} ${n === 1 ? 'release' : 'releases'}`;
+            const monthHead = (label, n) => `<div class="flex items-center gap-3 mb-4"><h2 class="text-lg font-black uppercase tracking-wide text-theme-main">${label}</h2><span class="text-[11px] font-bold text-theme-muted whitespace-nowrap">${plural(n)}</span><div class="flex-1 border-t border-theme"></div></div>`;
+            let html = '';
+            months.forEach(m => {
+                const total = m.soon.length + m.days.reduce((n, d) => n + d.items.length, 0);
+                html += `<section class="mb-8">${monthHead(`${MONTH_NAMES[m.mo]} ${m.y}`, total)}`;
+                m.days.forEach(d => {
+                    const isToday = d.date.getTime() === today.getTime(), isTomorrow = d.date.getTime() === tomorrow.getTime();
+                    const tag = isToday ? ' • Today' : (isTomorrow ? ' • Tomorrow' : '');
+                    html += `<div class="mb-6">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 shrink-0 rounded-xl bg-theme-card border ${isToday ? 'accent-border' : 'border-theme'} text-center py-1.5">
+                                <div class="text-[9px] font-extrabold uppercase tracking-wider text-amber-500">${DAY_NAMES[d.date.getDay()].slice(0, 3)}</div>
+                                <div class="text-xl font-black leading-none text-theme-main">${String(d.date.getDate()).padStart(2, '0')}</div>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-extrabold text-theme-main">${DAY_NAMES[d.date.getDay()]}, ${MONTH_NAMES[d.date.getMonth()]} ${d.date.getDate()}</div>
+                                <div class="text-[11px] text-theme-muted">${plural(d.items.length)}${tag}</div>
+                            </div>
+                        </div>
+                        ${cards(d.items)}
+                    </div>`;
+                });
+                if (m.soon.length) html += `<div class="mb-6"><div class="text-sm font-extrabold text-theme-main mb-3">Exact date to be announced</div>${cards(m.soon)}</div>`;
+                html += '</section>';
+            });
+            if (tba.length) html += `<section class="mb-8">${monthHead('Date TBA', tba.length)}${cards(tba)}</section>`;
+            el.innerHTML = html;
+        }
+        // when midnight passes, the finished day's titles disappear without a reload
+        function scheduleUpcomingMidnightRefresh() {
+            const n = new Date(), next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 5);
+            setTimeout(() => { try { renderUpcomingGrids(); } catch (e) {} scheduleUpcomingMidnightRefresh(); }, next - n);
+        }
+        scheduleUpcomingMidnightRefresh();
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) { try { renderUpcomingGrids(); } catch (e) {} } });
 
         function createUpcomingCardHTML(u, isGrid2) {
                 const inWatchlist = watchlistIds.includes(u.id);
@@ -1657,6 +1751,7 @@
         // --- CG RATING (CineGuide community rating: every user's star rating is collected here) ---
         const cgCache = {};
         function cgFmt(c) {
+            if (c && c.error) return { score: '—', votes: 'Votes unavailable right now' };
             if (!c || !c.count) return { score: '—', votes: 'No votes yet' };
             return { score: c.avg.toFixed(1), votes: `${c.count} ${c.count === 1 ? 'vote' : 'votes'}` };
         }
@@ -1826,6 +1921,7 @@
         // re-draw when the person signs in / out
         window.onCineAuthChange = function () {
             pgDraftFor = null;
+            try { paintRatingLogin(); } catch (e) {}
             if (currentDetailItem && !currentDetailItem.isUpcoming) loadPG(currentDetailItem.id);
         };
 
@@ -1839,7 +1935,7 @@
             document.getElementById('ratingModalTitle').innerHTML = `${esc(item.title)} <span class="font-normal text-gray-400">${esc(item.year)}</span>`;
             renderTenStarsUI();
             const cgOn = getFeatures().cgRating.enabled;
-            document.getElementById('cgModalNote').style.display = cgOn ? '' : 'none';
+            paintRatingLogin();
             if (cgOn) { paintCG(id); loadCG(id); }
 
             const modal = document.getElementById('ratingModal');
@@ -1854,7 +1950,17 @@
             modal.classList.remove('flex');
         }
 
+        // CG Rating: only signed-in members can rate (guests can read the average and use "Not now")
+        function cgMember() { return !!(window.CineSync && CineSync.isSignedIn && CineSync.isSignedIn()); }
+        function paintRatingLogin() {
+            const guest = getFeatures().cgRating.enabled && !cgMember();
+            const note = document.getElementById('cgModalNote'), hint = document.getElementById('cgLoginHint'), save = document.getElementById('saveRatingBtn');
+            if (note) note.style.display = (guest || !getFeatures().cgRating.enabled) ? 'none' : '';
+            if (hint) hint.style.display = guest ? '' : 'none';
+            if (save) save.textContent = guest ? 'Sign in to rate' : 'Save rating';
+        }
         function selectStarValue(val) {
+            if (getFeatures().cgRating.enabled && !cgMember()) { showToast('Sign in with Google to rate this title'); return; }
             selectedStarsCount = val;
             renderTenStarsUI();
         }
@@ -1883,6 +1989,11 @@
 
         function saveUserStarRating() {
             if (!ratingTargetId) return;
+            if (getFeatures().cgRating.enabled && !cgMember()) {
+                showToast('Sign in with Google to rate this title');
+                if (window.CineSync && CineSync.signInWithGoogle) CineSync.signInWithGoogle();
+                return;
+            }
             if (selectedStarsCount === 0) { showToast('Pick a star rating first (1 to 10)'); return; }
             if (selectedStarsCount > 0) {
                 userRatings[ratingTargetId] = selectedStarsCount;
