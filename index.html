@@ -439,18 +439,21 @@
                 <button onclick="toggleLayoutMode('library')" data-section="library" class="layout-toggle-btn flex items-center gap-1.5 px-3 py-2 rounded-xl bg-theme-card border border-theme text-xs font-bold text-theme-main"></button>
             </div>
 
-            <div class="inline-flex p-1 rounded-xl bg-theme-card border border-theme mb-6">
-                <button onclick="switchLibraryTab('watchlist')" id="libTab-watchlist" class="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 text-white transition">
+            <div class="inline-flex max-w-full overflow-x-auto no-scrollbar p-1 rounded-xl bg-theme-card border border-theme mb-6">
+                <button onclick="switchLibraryTab('watchlist')" id="libTab-watchlist" class="px-3.5 py-2 rounded-lg text-xs font-bold bg-rose-600 text-white transition whitespace-nowrap">
                     Watchlist <span id="libCountWatchlist" class="ml-1 opacity-90">0</span>
                 </button>
-                <button onclick="switchLibraryTab('watched')" id="libTab-watched" class="px-4 py-2 rounded-lg text-xs font-bold text-theme-muted hover:text-theme-main transition">
+                <button onclick="switchLibraryTab('watched')" id="libTab-watched" class="px-3.5 py-2 rounded-lg text-xs font-bold text-theme-muted hover:text-theme-main transition whitespace-nowrap">
                     Watched <span id="libCountWatched" class="ml-1 opacity-80">0</span>
+                </button>
+                <button onclick="switchLibraryTab('upcoming')" id="libTab-upcoming" class="px-3.5 py-2 rounded-lg text-xs font-bold text-theme-muted hover:text-theme-main transition whitespace-nowrap">
+                    Upcoming <span id="libCountUpcoming" class="ml-1 opacity-80">0</span>
                 </button>
             </div>
 
             <div id="watchlistEmptyState" class="p-10 rounded-2xl bg-theme-card border border-theme text-center my-4">
-                <h3 class="font-bold text-base text-theme-main mb-1">Nothing here yet</h3>
-                <p class="text-xs text-theme-muted max-w-xs mx-auto">Bookmark any movie or upcoming release to keep track of it here.</p>
+                <h3 id="watchlistEmptyTitle" class="font-bold text-base text-theme-main mb-1">Nothing here yet</h3>
+                <p id="watchlistEmptyText" class="text-xs text-theme-muted max-w-xs mx-auto">Bookmark any movie or series to keep track of it here.</p>
             </div>
 
             <div id="watchlistGrid" class="grid grid-cols-1 gap-5"></div>
@@ -2269,8 +2272,13 @@
                                 <i data-lucide="play" class="w-4 h-4 fill-current"></i> Trailer
                             </button>
                             <div class="col-span-5 py-3 rounded-2xl bg-theme-card border border-theme text-theme-main font-bold text-xs sm:text-sm flex items-center justify-center gap-2">
-                                <span class="px-1.5 py-0.5 rounded bg-amber-400 text-black text-[11px] font-black">IMDb</span>
-                                <span>★ ${esc(item.rating)}</span>
+                                ${(() => {
+                                    const imdb = String(item.imdbRating || '').trim();
+                                    if (imdb) return `<span class="px-1.5 py-0.5 rounded bg-amber-400 text-black text-[11px] font-black">IMDb</span><span>★ ${esc(imdb)}</span>`;
+                                    // rating auto-filled from TMDB is a TMDB score, not IMDb
+                                    if (item.tmdbId) return `<span class="px-1.5 py-0.5 rounded bg-[#01b4e4] text-[#0d253f] text-[11px] font-black">TMDB</span><span>★ ${esc(item.rating)}</span>`;
+                                    return `<span class="px-1.5 py-0.5 rounded bg-amber-400 text-black text-[11px] font-black">IMDb</span><span>★ ${esc(item.rating)}</span>`;
+                                })()}
                             </div>
                             <a href="https://www.google.com/search?q=${encodeURIComponent(item.title + ' ' + item.year)}" target="_blank" class="col-span-2 py-3 rounded-2xl bg-theme-card border border-theme flex items-center justify-center font-extrabold text-sm text-blue-500">
                                 G
@@ -2744,8 +2752,8 @@
             let actor = actorsDB[c.actorId];
             if (!actor || actor.name !== c.name) {
                 actor = {
-                    id: 'cast-' + idx, name: c.name, roleType: 'Acting', born: 'Not available', birthplace: 'Not available',
-                    photo: c.photo || '', bio: `${c.name} appears as ${c.character || 'a cast member'} in ${currentDetailItem.title}.`,
+                    id: 'cast-' + idx, name: c.name, roleType: 'Acting', born: c.born || '', birthplace: c.birthplace || '',
+                    photo: c.photo || '', bio: c.bio || `${c.name} appears as ${c.character || 'a cast member'} in ${currentDetailItem.title}.`,
                     movies: [], series: []
                 };
             }
@@ -2764,6 +2772,7 @@
         function renderActorView() {
             const actor = currentActorObj;
             const list = currentActorTab === 'movies' ? actor.movies : actor.series;
+            const hasInfo = v => v && String(v).trim() && !/^not available$/i.test(String(v).trim());
 
             const container = document.getElementById('actorContent');
             container.innerHTML = `
@@ -2776,11 +2785,12 @@
                         <img src="${esc(actor.photo)}" alt="${esc(actor.name)}" class="w-full h-full object-cover">
                     </div>
                     <h1 class="text-2xl sm:text-3xl font-extrabold text-theme-main mb-2">${esc(actor.name)}</h1>
-                    <p class="text-xs text-theme-muted mb-1">${esc(actor.roleType)} &nbsp;•&nbsp; Born ${esc(actor.born)}</p>
-                    <p class="text-xs text-theme-muted mb-4">• ${esc(actor.birthplace)}</p>
+                    <p class="text-xs text-theme-muted mb-1">${esc(actor.roleType)}${hasInfo(actor.born) ? ` &nbsp;•&nbsp; Born ${esc(actor.born)}` : ''}</p>
+                    ${hasInfo(actor.birthplace) ? `<p class="text-xs text-theme-muted mb-1">• ${esc(actor.birthplace)}</p>` : ''}
+                    <div class="mb-3"></div>
 
                     <p id="actorBioText" class="text-xs sm:text-sm text-theme-muted leading-relaxed line-clamp-4">${esc(actor.bio)}</p>
-                    <button onclick="document.getElementById('actorBioText').classList.toggle('line-clamp-4')" class="text-xs font-bold accent-text mt-2 hover:underline">Read more</button>
+                    <button id="actorBioBtn" onclick="toggleActorBio()" class="hidden text-xs font-bold accent-text mt-2 hover:underline">Read more</button>
                 </div>
 
                 <div class="border-b border-theme flex items-center gap-6 mb-5">
@@ -2807,6 +2817,18 @@
                 </div>
             `;
             lucide.createIcons();
+            // show "Read more" only when the bio is really cut off
+            requestAnimationFrame(() => {
+                const bio = document.getElementById('actorBioText'), btn = document.getElementById('actorBioBtn');
+                if (bio && btn && bio.scrollHeight > bio.clientHeight + 1) btn.classList.remove('hidden');
+            });
+        }
+
+        function toggleActorBio() {
+            const bio = document.getElementById('actorBioText'), btn = document.getElementById('actorBioBtn');
+            if (!bio || !btn) return;
+            const open = bio.classList.toggle('line-clamp-4') === false;
+            btn.textContent = open ? 'Show less' : 'Read more';
         }
 
         // --- 13. WATCHLIST, SORTING & NAVIGATION HELPERS ---
@@ -2826,23 +2848,50 @@
         function updateWatchlistCounters() {
             document.getElementById('headerWatchlistBadge').textContent = watchlistIds.length;
             document.getElementById('drawerWatchlistCount').textContent = watchlistIds.length;
-            document.getElementById('libCountWatchlist').textContent = watchlistIds.length;
+            const myUp = getMyUpcoming();
+            const upInWatchlist = myUp.filter(u => watchlistIds.includes(u.id)).length;
+            document.getElementById('libCountWatchlist').textContent = Math.max(0, watchlistIds.length - upInWatchlist);
             document.getElementById('libCountWatched').textContent = watchedIds.length;
+            document.getElementById('libCountUpcoming').textContent = myUp.length;
+        }
+
+        // Upcoming releases the visitor saved to the watchlist or turned a release alert on for (soonest first)
+        function getMyUpcoming() {
+            const mine = upcomingList.filter(u => watchlistIds.includes(u.id) || notifyUpcomingIds.includes(u.id));
+            const t = u => { const d = Date.parse(u.releaseDate); return isNaN(d) ? Infinity : d; };
+            return mine.sort((a, b) => t(a) - t(b));
         }
 
         function switchLibraryTab(tab) {
             currentLibraryTab = tab;
-            document.getElementById('libTab-watchlist').className = tab === 'watchlist' ? "px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 text-white" : "px-4 py-2 rounded-lg text-xs font-bold text-theme-muted";
-            document.getElementById('libTab-watched').className = tab === 'watched' ? "px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 text-white" : "px-4 py-2 rounded-lg text-xs font-bold text-theme-muted";
+            ['watchlist', 'watched', 'upcoming'].forEach(name => {
+                const btn = document.getElementById('libTab-' + name);
+                if (btn) btn.className = name === tab
+                    ? "px-3.5 py-2 rounded-lg text-xs font-bold bg-rose-600 text-white whitespace-nowrap"
+                    : "px-3.5 py-2 rounded-lg text-xs font-bold text-theme-muted whitespace-nowrap";
+            });
             renderWatchlistView();
         }
 
         function renderWatchlistView() {
-            const ids = currentLibraryTab === 'watchlist' ? watchlistIds : watchedIds;
-            const matchedReviews = allReviews.filter(r => ids.includes(r.id));
-            const matchedUpcoming = upcomingList.filter(u => ids.includes(u.id));
+            const tab = currentLibraryTab;
+            let matchedReviews = [], matchedUpcoming = [];
+            if (tab === 'upcoming') {
+                matchedUpcoming = getMyUpcoming();
+            } else {
+                // reviews only here: saved upcoming releases have their own tab
+                const ids = tab === 'watchlist' ? watchlistIds : watchedIds;
+                matchedReviews = allReviews.filter(r => ids.includes(r.id));
+            }
             const empty = document.getElementById('watchlistEmptyState');
             const grid = document.getElementById('watchlistGrid');
+            const emptyText = {
+                watchlist: ['Nothing here yet', 'Bookmark any movie or series to keep track of it here.'],
+                watched: ['Nothing watched yet', 'Mark a title as watched and it will show up here.'],
+                upcoming: ['No upcoming releases saved', 'Tap the bookmark or Notify Me on any upcoming release to track it here.']
+            }[tab];
+            document.getElementById('watchlistEmptyTitle').textContent = emptyText[0];
+            document.getElementById('watchlistEmptyText').textContent = emptyText[1];
 
             if (matchedReviews.length === 0 && matchedUpcoming.length === 0) {
                 empty.classList.remove('hidden');
